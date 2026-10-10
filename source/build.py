@@ -34,10 +34,11 @@ engine = engine.replace('</body>', style + '</body>')
 # Retain notices in standalone assets, including the mixed-license source link.
 notice_files = [ROOT.parent / 'LICENSE'] + [vendor / name for name in
     ['CIMBAR-LICENSE.txt', 'fflate-LICENSE.txt', 'sha256-LICENSE.txt', 'qrcodegen-LICENSE.txt']]
-notice_files += sorted(path for path in (vendor / 'cimbar-notices').iterdir() if path.name != 'sources.json')
+notice_files += sorted((path for path in (vendor / 'cimbar-notices').iterdir() if path.name != 'sources.json'),
+                       key=lambda path: path.name)
 notices = '\n\n'.join(path.read_text(encoding='utf-8') for path in notice_files)
 notice = '''<!--
-Code Bridge v1.2.0: original wrapper MIT; CIMBAR and modifications MPL-2.0.
+Code Bridge v1.2.1: original wrapper MIT; CIMBAR and modifications MPL-2.0.
 Local source and patches: https://github.com/1CWwW/code-bridge
 Corresponding CIMBAR encoder source: https://github.com/sz3/libcimbar/tree/v0.6.8
 Complete notices follow.
