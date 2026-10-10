@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>代码桥 · Linux 离线发送</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#243149;font:15px/1.6 system-ui,"Noto Sans CJK SC",sans-serif}header,main,footer{max-width:1420px;margin:auto;padding:24px 32px}header{display:flex;justify-content:space-between;align-items:center}h1{font-size:30px;margin:0}h2{font-size:18px;margin:0 0 18px}p{margin:8px 0}.muted{color:#66748c}.tag{background:#e6f3ee;color:#226b52;border-radius:30px;padding:8px 16px;font-size:13px}main{display:grid;grid-template-columns:minmax(370px,470px) minmax(540px,1fr);gap:22px;padding-top:0}.card{background:white;border:1px solid #e3e8f1;border-radius:18px;padding:24px;box-shadow:0 6px 22px #18274405}#drop{border:2px dashed #a7bddf;background:#f7faff;border-radius:12px;padding:24px;text-align:center;cursor:pointer}#drop.over{background:#e8f0ff;border-color:#3265c9}.drop-title{font-size:19px;font-weight:650}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0}button,.button{font:inherit;cursor:pointer;border:1px solid #d5dfed;background:white;color:#243149;border-radius:8px;padding:8px 16px;text-decoration:none;display:inline-block}button.primary{background:#2e5ccd;color:white;border-color:#2e5ccd}button:disabled{cursor:default;opacity:.45}input[type=checkbox]{accent-color:#2e5ccd}textarea{width:100%;min-height:120px;border:1px solid #d5dfed;border-radius:9px;padding:12px;font:13px/1.5 ui-monospace,monospace;resize:vertical}#files{max-height:190px;overflow:auto;border-top:1px solid #eef1f6;margin:14px 0;font-size:13px}.file{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #eef1f6}.file span:first-child{overflow-wrap:anywhere}.file button{padding:0 8px}.small{font-size:12px}#stats{background:#f0f4fc;padding:14px;border-radius:10px;margin:16px 0;white-space:pre-line}#status{color:#405573;white-space:pre-line}#status.error{color:#b12b3c}#screen{height:min(68vw,660px);min-height:530px;background:white;border:1px solid #dde4ee;border-radius:12px;overflow:hidden}iframe{width:100%;height:100%;border:0}.help{background:#f6f8fc;border-radius:10px;padding:16px;font-size:14px}.help ol{padding-left:23px;margin:8px 0}.receiver{display:flex;align-items:center;gap:16px}.receiver canvas{width:112px;height:112px;flex-shrink:0}.receiver a{color:#2e5ccd}select{font:inherit;border:1px solid #d5dfed;border-radius:8px;padding:8px;background:white}#screen:fullscreen{height:100vh;min-height:0;border-radius:0;padding:0}footer{font-size:12px;padding-top:4px}details summary{cursor:pointer;color:#476384}#progress{width:100%;accent-color:#2e5ccd}label{cursor:pointer}a{color:#2e5ccd}@media(max-width:1040px){main{grid-template-columns:1fr}#screen{height:650px}}@media(max-width:600px){header,main,footer{padding:18px}.card{padding:18px}.tag{display:none}#screen{min-height:380px;height:92vw}}
+</style>
+<style>[hidden]{display:none!important}#stats{overflow-wrap:anywhere}#screen{height:clamp(380px,calc(100vh - 320px),660px);min-height:380px}#screen:fullscreen{height:100vh}#plainbox{height:100%;width:100%;display:grid;place-items:center;padding:16px}#plainqr{display:block;max-width:100%;max-height:100%}.plain-mode #text{min-height:350px}.plain-mode details summary{font-weight:650}#plain-snippet{overflow-wrap:anywhere;margin-top:12px}@media(max-width:1040px){#screen{height:650px}}@media(max-width:600px){#screen{height:92vw}}</style></head>
+<body>
+<header><div><h1>代码桥</h1><p class="muted">粘贴代码直接扫码复制，或拖入文件传递完整代码包</p></div><span class="tag">v1.2 · Linux 本地运行</span></header>
+<main><section class="card"><h2>01　选择代码</h2>
+<div class="row"><label>传递方式 <select id="mode"><option value="plain" selected>直接文本二维码 · 扫码复制</option><option value="files">文件传输 · 彩色动画</option></select></label></div>
+<div id="file-controls" hidden>
+<div id="drop" tabindex="0" role="button" aria-label="拖入或选择代码文件"><div class="drop-title">拖入文件或整个文件夹</div><div class="muted">支持多个 .java、XML、配置文件，也可传 ZIP</div><div class="small muted">保留文件原始内容与目录结构</div></div>
+<div class="row"><button id="choose">选择文件</button><button id="folder">选择文件夹</button><button id="clear">清空</button></div>
+<input id="filepicker" type="file" multiple hidden><input id="folderpicker" type="file" multiple webkitdirectory hidden>
+<div><label><input id="ignore" type="checkbox" checked> 忽略 .git / target / build / node_modules 等目录</label></div>
+<div><label><input id="context" type="checkbox" checked> 附带 AI-context.md，方便一次上传代码给 AI</label></div>
+<div id="files"><p class="muted">尚未选择文件</p></div>
+</div>
+<details id="text-section" open><summary id="text-label">粘贴代码</summary><textarea id="text" placeholder="粘贴代码，或说明：请帮我修复什么问题、保留哪些接口……"></textarea><p id="text-hint" class="small muted">二维码里直接包含输入框原文，手机扫码后复制即可。</p></details>
+<div id="plain-options" class="row"><label>每张容量 <select id="plain-limit"><option value="600">600 字节 · 更易扫描</option><option value="1200" selected>1200 字节 · 推荐</option><option value="2200">2200 字节 · 减少张数</option></select></label></div>
+<div id="stats">准备好文件后点击“压缩并准备”。</div><progress id="progress" max="100" value="0" hidden></progress>
+<div class="row"><button class="primary" id="prepare">生成文本二维码</button><button id="download" hidden disabled>保存 ZIP</button><button id="clear-text">清空代码</button></div>
+<div id="status" role="status" aria-live="polite">发送端完全离线。iPhone 需使用配套接收网页。</div>
+</section>
+<section class="card"><h2>02　用 iPhone 接收</h2>
+<div id="screen"><iframe id="engine" hidden title="CIMBAR 彩色动画发送区域"></iframe><div id="plainbox"><canvas id="plainqr" hidden></canvas><span id="plain-empty" class="muted">粘贴代码后生成二维码</span></div></div>
+<div class="row"><button class="primary" id="start" hidden disabled>开始传输</button><button id="stop" hidden disabled>停止</button><button id="previous" disabled>上一张</button><span id="plain-page">待生成</span><button id="next" disabled>下一张</button><button id="fullscreen">放大 / 全屏</button><button id="save-plain" disabled>保存二维码</button><label id="fps-label" hidden>帧率 <select id="fps"><option value="5">5 FPS</option><option value="10" selected>10 FPS</option><option value="15">15 FPS</option><option value="20">20 FPS</option></select></label></div>
+<div id="plain-help" class="help"><strong>扫码后直接复制代码</strong><p>二维码内容就是原文，不生成 ZIP，也不添加链接、序号或包装文本。请使用支持普通文本读取和复制的扫码工具。</p><p>长代码会分成多张，需要按顺序复制、拼接，不额外插入空格或换行。若 iPhone 相机未显示代码内容，可换用支持文本的扫码工具。</p><p id="plain-snippet" class="small muted"></p></div>
+<div id="file-help" class="help" hidden><div class="receiver"><canvas id="receiverqr"></canvas><div>先用 iPhone 相机扫描左侧二维码，<br>在 <strong>Safari</strong> 打开 <a href="https://cimbar.org/recv.html" target="_blank" rel="noopener">配套接收页</a>，允许使用后置相机。<div class="small muted">这个二维码只用来打开接收工具；代码由上方彩色动画传递。</div></div></div>
+<ol><li>电脑点击“开始传输”，手机摄像头对准彩色码。</li><li>接收页建议选择 <strong>B</strong> 模式。保持整个码在画面内，等待文件完成。</li><li>保存 ZIP 到“文件”App，点击解压。可取出原文件，或将 AI-context.md 交给 AI。</li></ol>
+<p class="small muted">接收页首次加载需要手机联网；Linux 不需要网络。开始后画面会快速闪动。识别慢时降低帧率、使用全屏并调整拍摄距离。</p></div>
+</section></main>
+<footer>发送引擎：CIMBAR v0.6.8（MPL-2.0），压缩：fflate v0.8.2（MIT）。本工具未在 iPhone 摄像头及你的 Linux 设备上实测；文件打包与发送引擎在桌面浏览器中验证。<a href="https://github.com/sz3/libcimbar" target="_blank" rel="noopener">上游项目</a> · <a href="https://github.com/sz3/libcimbar/tree/v0.6.8" target="_blank" rel="noopener">发送引擎对应源码</a></footer>
+<!--BUNDLED_LIBRARIES-->
+<script id="engine-source" type="application/octet-stream">__ENGINE_BASE64__</script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const MAX_RAW = 20 * 1024 * 1024, MAX_ZIP = 25 * 1024 * 1024, MAX_FILES = 5000;
+const ignored = new Set(['.git','.svn','.hg','target','build','out','node_modules','.gradle','.idea']);
+let selected = new Map(), packed = null, engineReady = false, generation = 0, busy = false;
+let plainParts=[],plainIndex=0,plainQr=null;
+let engineLoaded=false;
+const isPlain=()=> $('mode').value==='plain';
+const fileSize = n => n < 1024 ? n+' B' : n < 1048576 ? (n/1024).toFixed(1)+' KB' : (n/1048576).toFixed(2)+' MB';
+function message(text, error=false) { $('status').textContent=text; $('status').className=error?'error':''; }
+function invalidate() {
+  generation++;
+  packed=null; $('start').disabled=true; $('download').disabled=true; $('stop').disabled=true;
+  plainParts=[];plainIndex=0;plainQr=null;
+  $('plainqr').hidden=true;$('plain-empty').hidden=false;
+  $('previous').disabled=$('next').disabled=$('save-plain').disabled=true;$('plain-page').textContent='待生成';$('plain-snippet').textContent='';
+  if(engineReady) resetEngine();
+  $('stats').textContent=isPlain()?new TextEncoder().encode($('text').value).length+' 字节（UTF-8）· 修改后请重新生成。':'文件或内容已修改，请重新压缩准备。';
+}
+function resetEngine() {
+  const win=$('engine').contentWindow;
+  if(win.Send.cancelImport)win.Send.cancelImport();
+  if (win.Module && win.Module._cimbare_init_encode) win.Send.encode_init('idle.zip');
+  win.document.getElementById('dragdrop').classList.remove('active');
+  win.document.querySelector('.drop-message').style.display='';
+  win.document.getElementById('canvas').style.visibility='hidden';
+}
+function pathName(path) {
+  const clean=path.replace(/\\/g,'/');
+  if(!clean || clean.startsWith('/') || clean.includes('\0') || clean.split('/').some(p=>!p||p==='.'||p==='..') || /^[A-Za-z]:/.test(clean)) throw new Error('不支持的文件路径：'+path);
+  if(clean.startsWith('__codebridge__/')) throw new Error('__codebridge__ 是保留目录，请重命名后再添加。');
+  return clean;
+}
+function included(path) { return !$('ignore').checked || !path.split('/').slice(0,-1).some(p=>ignored.has(p)); }
+function updateList(announce=true) {
+  $('files').replaceChildren(); let used=0, skipped=0, bytes=0;
+  for(const [name,file] of selected) {
+    if(!included(name)){skipped++;continue;}
+    used++;bytes+=file.size;
+    if(used>150) continue;
+    const row=document.createElement('div');row.className='file';
+    const title=document.createElement('span');title.textContent=name;
+    const size=document.createElement('span');size.className='muted';size.textContent=fileSize(file.size);
+    const remove=document.createElement('button');remove.textContent='×';remove.title='移除 '+name;remove.disabled=busy;
+    remove.onclick=()=>{selected.delete(name);invalidate();updateList();};
+    row.append(title,size,remove);$('files').append(row);
+  }
+  if(used>150){const p=document.createElement('p');p.textContent='另有 '+(used-150)+' 个文件';$('files').append(p);}
+  if(!used){const p=document.createElement('p');p.className='muted';p.textContent='尚未选择可传输文件';$('files').append(p);}
+  if(announce)message(isPlain()?'粘贴代码后点击“生成文本二维码”。':'已选择 '+used+' 个文件 · '+fileSize(bytes)+(skipped?' · 忽略 '+skipped+' 个构建/依赖文件':''));
+}
+function addFiles(entries) {
+  if(busy)return;
+  const proposed=new Map(selected);
+  for(const item of entries) {
+    const name=pathName(item.path || item.file.webkitRelativePath || item.file.name);
+    if(proposed.has(name)) throw new Error('存在重复路径：'+name+'。请先移除旧文件，或选择包含这些文件的共同文件夹。');
+    proposed.set(name,item.file);
+    if(proposed.size>MAX_FILES)throw new Error('一次最多选择 '+MAX_FILES+' 个文件，请按模块传输。');
+  }
+  selected=proposed;
+  if(entries.length&&isPlain()){$('mode').value='files';applyMode();}
+  invalidate();updateList();
+}
+async function walk(entry, prefix='') {
+  const name=prefix+entry.name;
+  if(entry.isFile) return [{path:name,file:await new Promise((resolve,reject)=>entry.file(resolve,reject))}];
+  if(entry.isDirectory) {
+    const reader=entry.createReader();let result=[],batch;
+    while((batch=await new Promise((resolve,reject)=>reader.readEntries(resolve,reject))).length) {
+      for(const child of batch) {
+        result.push(...await walk(child,name+'/'));
+        if(result.length>MAX_FILES)throw new Error('文件过多，请只选择相关源码目录。');
+      }
+    }
+    return result;
+  }
+  return [];
+}
+function bindFiles(id) {
+  $(id).onchange=async e=>{try{addFiles(Array.from(e.target.files).map(file=>({file})));}catch(err){message(err.message,true);}e.target.value='';};
+}
+bindFiles('filepicker');bindFiles('folderpicker');
+$('choose').onclick=()=> $('filepicker').click();$('folder').onclick=()=> $('folderpicker').click();
+$('drop').onclick=()=> $('filepicker').click();
+$('drop').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('filepicker').click();}};
+document.addEventListener('dragover',e=>{e.preventDefault();$('drop').classList.add('over');});
+document.addEventListener('dragleave',e=>{if(!e.relatedTarget)$('drop').classList.remove('over');});
+async function walkHandle(handle,prefix='') {
+  const name=prefix+handle.name;
+  if(handle.kind==='file')return [{path:name,file:await handle.getFile()}];
+  if(handle.kind!=='directory')return [];
+  const result=[];
+  for await(const child of handle.values()) {
+    result.push(...await walkHandle(child,name+'/'));
+    if(result.length>MAX_FILES)throw new Error('文件过多，请只选择相关源码目录。');
+  }
+  return result;
+}
+function captureDrop(transfer) {
+  // Every item method must run synchronously while the drop data store is readable.
+  return Array.from(transfer.items||[]).filter(item=>item.kind==='file').map(item=>{
+    let entry=null;
+    try {const getEntry=item.getAsEntry||item.webkitGetAsEntry;if(getEntry)entry=getEntry.call(item);}catch{}
+    const file=item.getAsFile();
+    let handle=null;
+    // Files already have a File object. Avoid the legacy entry.file() path on file://.
+    if((!entry||entry.isDirectory)&&item.getAsFileSystemHandle) {
+      try {handle=Promise.resolve(item.getAsFileSystemHandle()).then(value=>({value}),error=>({error}));}catch(error){handle=Promise.resolve({error});}
+    }
+    return {entry,file,handle};
+  });
+}
+async function readDropped(records,fallbackFiles) {
+  const incoming=[];
+  if(!records.length)return fallbackFiles.map(file=>({file}));
+  for(const record of records) {
+    if(record.entry&&record.entry.isDirectory) {
+      if(record.handle) {
+        const result=await record.handle;
+        if(result.value&&result.value.kind==='directory') {
+          try {incoming.push(...await walkHandle(result.value));}
+          catch(error){throw new Error('浏览器无法读取该文件夹，请点击“选择文件夹”，或将文件夹打成 ZIP 后拖入。');}
+          if(incoming.length>MAX_FILES)throw new Error('一次最多选择 '+MAX_FILES+' 个文件，请按模块传输。');
+          continue;
+        }
+      }
+      try {incoming.push(...await walk(record.entry));}
+      catch(error) {
+        const detail=error&&error.name==='EncodingError'?'本地页面的旧目录接口受浏览器限制。':'浏览器无法读取该文件夹。';
+        throw new Error(detail+'请点击“选择文件夹”，或将文件夹打成 ZIP 后拖入。');
+      }
+    } else if(!record.entry&&record.handle) {
+      const result=await record.handle;
+      if(result.value)incoming.push(...await walkHandle(result.value));
+      else if(record.file)incoming.push({file:record.file});
+      else throw new Error('无法读取拖入的项目，请点击“选择文件”或“选择文件夹”。');
+    } else if(record.file) {
+      incoming.push({file:record.file});
+    } else if(record.handle) {
+      const result=await record.handle;
+      if(!result.value)throw new Error('无法读取拖入的项目，请点击“选择文件”或“选择文件夹”。');
+      incoming.push(...await walkHandle(result.value));
+    } else throw new Error('无法读取拖入的项目，请点击“选择文件”或“选择文件夹”。');
+    if(incoming.length>MAX_FILES)throw new Error('一次最多选择 '+MAX_FILES+' 个文件，请按模块传输。');
+  }
+  return incoming;
+}
+document.addEventListener('drop',async e=>{
+  e.preventDefault();$('drop').classList.remove('over');if(busy)return;
+  try {
+    const records=captureDrop(e.dataTransfer);
+    const files=Array.from(e.dataTransfer.files);
+    const incoming=await readDropped(records,files);
+    addFiles(incoming);
+  }catch(err){message(err.message,true);}
+});
+$('clear').onclick=()=>{if(busy)return;selected.clear();$('text').value='';invalidate();updateList();};
+$('ignore').onchange=()=>{invalidate();updateList();};$('context').onchange=invalidate;$('text').oninput=invalidate;
+function lock(value) {
+  busy=value;
+  for(const id of ['prepare','choose','folder','clear','ignore','context','text'])$(id).disabled=value;
+  $('mode').disabled=$('clear-text').disabled=value;
+  $('progress').hidden=!value;updateList(false);
+}
+function zipAsync(entries) {return new Promise((resolve,reject)=>fflate.zip(entries,{level:6},(err,data)=>err?reject(err):resolve(data)));}
+async function buildPackage() {
+  if(busy)return;
+  invalidate();const token=generation;
+  const source=Array.from(selected).filter(([name])=>included(name));
+  const text=$('text').value;
+  if(!source.length&&!text){message('请拖入文件或粘贴代码。',true);return;}
+  const rawSize=source.reduce((n,[name,file])=>n+file.size,0)+new TextEncoder().encode(text).length;
+  if(rawSize>MAX_RAW){message('当前原始文件合计上限为 20 MB，请按模块分别传输。',true);return;}
+  lock(true);$('progress').value=0;message('正在读取并压缩…');
+  try {
+    const entries=Object.create(null), manifest=[];let contexts=[],done=0;
+    const add=(name,bytes)=>{
+      entries[name]=bytes;manifest.push({path:name,bytes:bytes.length,sha256:sha256(bytes)});
+      if($('context').checked) {
+        try{const content=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+          if(content.includes('\0'))throw new Error('binary');
+          // Use headings + indented text to avoid code fences being closed by source content.
+          contexts.push('## 文件：'+name+'\n\n'+content.split(/\r\n|\n|\r/).map(line=>'    '+line).join('\n')+'\n');
+        }catch{contexts.push('## 文件：'+name+'\n\n此文件为二进制或非 UTF-8，完整原始字节保留在 ZIP 内。\n');}
+      }
+    };
+    for(const [name,file] of source) {add(name,new Uint8Array(await file.arrayBuffer()));$('progress').value=Math.round(++done/(source.length+1)*70);}
+    if(text)add('__codebridge__/pasted-code.txt',new TextEncoder().encode(text));
+    entries['__codebridge__/manifest.json']=fflate.strToU8(JSON.stringify({format:'codebridge-1',files:manifest},null,2));
+    if($('context').checked)entries['__codebridge__/AI-context.md']=fflate.strToU8('# 代码上下文\n\n下面是本次选择的文件。请结合实际需求分析，并尽量返回可应用的补丁。\n\n'+contexts.join('\n'));
+    const zip=await zipAsync(entries);
+    if(token!==generation)return;
+    if(zip.length>MAX_ZIP)throw new Error('ZIP 超过 25 MB，请按模块分别传输。');
+    packed={bytes:zip,rawSize,fileCount:manifest.length,sha256:sha256(zip)};
+    $('stats').textContent=manifest.length+' 个原始文件\n原始 '+fileSize(rawSize)+' → ZIP '+fileSize(zip.length)+'\n'+($('context').checked?'包含可交给 AI 的上下文文件':'不包含 AI 上下文')+'\nSHA-256: '+packed.sha256;
+    $('start').disabled=!engineReady;$('download').disabled=false;
+    message(engineReady?'打包完成。在 iPhone 打开接收页后，点击“开始传输”。':'打包完成，正在等待发送引擎初始化…');
+  }catch(err){message('准备失败：'+err.message,true);}
+  finally{lock(false);$('progress').value=100;}
+}
+function splitPlain(text,limit) {
+  const parts=[];let start=0,size=0;
+  for(let i=0;i<text.length;) {
+    let length=1;
+    const code=text.charCodeAt(i);
+    if(code>=0xd800&&code<=0xdbff){if(i+1>=text.length||text.charCodeAt(i+1)<0xdc00||text.charCodeAt(i+1)>0xdfff)throw new Error('代码中包含无效的 Unicode 字符。');length=2;}
+    else if(code>=0xdc00&&code<=0xdfff)throw new Error('代码中包含无效的 Unicode 字符。');
+    else if(text[i]==='\r'&&text[i+1]==='\n')length=2;
+    const bytes=new TextEncoder().encode(text.slice(i,i+length)).length;
+    if(size+bytes>limit){parts.push(text.slice(start,i));start=i;size=0;}
+    size+=bytes;i+=length;
+  }
+  if(start<text.length)parts.push(text.slice(start));
+  return parts;
+}
+function drawQr(canvas,qr,scale) {
+  canvas.width=canvas.height=(qr.size+8)*scale;
+  const context=canvas.getContext('2d');context.fillStyle='white';context.fillRect(0,0,canvas.width,canvas.height);context.fillStyle='black';
+  for(let y=0;y<qr.size;y++)for(let x=0;x<qr.size;x++)if(qr.getModule(x,y))context.fillRect((x+4)*scale,(y+4)*scale,scale,scale);
+}
+function paintPlain() {
+  if(!plainQr||!isPlain())return;
+  const box=$('plainbox'),canvas=$('plainqr'),scale=Math.max(1,Math.floor(Math.min(box.clientWidth-32,box.clientHeight-32)/(plainQr.size+8)));
+  drawQr(canvas,plainQr,scale);
+}
+function renderPlain() {
+  const content=plainParts[plainIndex];
+  const segments=[qrcodegen.QrSegment.makeEci(26),qrcodegen.QrSegment.makeBytes(Array.from(new TextEncoder().encode(content)))];
+  plainQr=qrcodegen.QrCode.encodeSegments(segments,qrcodegen.QrCode.Ecc.MEDIUM);
+  $('plainqr').hidden=false;$('plain-empty').hidden=true;paintPlain();
+  $('previous').disabled=plainIndex===0;$('next').disabled=plainIndex===plainParts.length-1;$('save-plain').disabled=false;
+  $('plain-page').textContent='第 '+(plainIndex+1)+' / '+plainParts.length+' 张';
+  $('stats').textContent=new TextEncoder().encode($('text').value).length+' 字节（UTF-8）\n共 '+plainParts.length+' 张 · 本张 '+new TextEncoder().encode(content).length+' 字节\n直接包含原文，无需下载文件或解压。';
+  $('plain-snippet').textContent='本张开头：'+content.slice(0,90).replaceAll('\r','␍').replaceAll('\n','␊').replaceAll('\t','⇥');
+  message(plainParts.length===1?'已生成。手机扫码后可以读取并复制代码。':'代码较长，共 '+plainParts.length+' 张。请按顺序扫码并拼接；大量代码可切换“文件传输”自动恢复。');
+}
+function generatePlain() {
+  invalidate();
+  const text=$('text').value;
+  if(!text){message('请先粘贴代码。',true);$('text').focus();return;}
+  if(new TextEncoder().encode(text).length>MAX_RAW){message('文本超过 20 MB，请按模块传递。',true);return;}
+  try{plainParts=splitPlain(text,Number($('plain-limit').value));plainIndex=0;renderPlain();}
+  catch(error){invalidate();message('生成失败：'+error.message,true);}
+}
+function applyMode() {
+  invalidate();const plain=isPlain();document.body.classList.toggle('plain-mode',plain);
+  for(const id of ['file-controls','download','engine','start','stop','fps-label','file-help'])$(id).hidden=plain;
+  for(const id of ['plain-options','plainbox','previous','next','plain-page','save-plain','plain-help','clear-text'])$(id).hidden=!plain;
+  $('prepare').textContent=plain?'生成文本二维码':'压缩并准备';
+  $('text-label').textContent=plain?'粘贴代码':'也可以粘贴代码或补充问题描述';
+  $('text-hint').textContent=plain?'二维码里直接包含输入框原文，手机扫码后复制即可。':'作为 pasted-code.txt 一并打包；修改后需重新生成。';
+  $('text-section').open=plain;
+  if(!plain)ensureEngine();
+  message(plain?'粘贴代码后生成二维码，无需联网或解压。':'发送端完全离线。iPhone 需使用配套接收网页。');
+}
+$('mode').onchange=applyMode;
+$('prepare').onclick=()=>isPlain()?generatePlain():buildPackage();
+$('plain-limit').onchange=()=>{const had=plainParts.length>0;invalidate();if(had)generatePlain();};
+$('previous').onclick=()=>{if(plainIndex>0){plainIndex--;renderPlain();}};
+$('next').onclick=()=>{if(plainIndex+1<plainParts.length){plainIndex++;renderPlain();}};
+$('clear-text').onclick=()=>{$('text').value='';invalidate();$('text').focus();};
+$('save-plain').onclick=()=>{
+  if(!plainQr)return;const canvas=document.createElement('canvas');drawQr(canvas,plainQr,8);
+  canvas.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='code-text-'+(plainIndex+1)+'-of-'+plainParts.length+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);},'image/png');
+};
+if(typeof ResizeObserver!=='undefined')new ResizeObserver(paintPlain).observe($('screen'));
+else window.addEventListener('resize',paintPlain);
+function saveZip(){if(!packed)return;const url=URL.createObjectURL(new Blob([packed.bytes],{type:'application/zip'}));const a=document.createElement('a');a.href=url;a.download='code-package.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}
+$('download').onclick=saveZip;
+function start(){
+  if(!packed||!engineReady)return;
+  const win=$('engine').contentWindow;
+  win.document.getElementById('canvas').style.visibility='visible';
+  win.document.querySelector('.drop-message').style.display='none';
+  win.Main.setFPS(Number($('fps').value));
+  win.Main.importFile(new File([packed.bytes],'code-package.zip',{type:'application/zip'}));
+  $('start').disabled=true;$('stop').disabled=false;
+  message('正在播放彩色动画。请观察 iPhone 的接收进度，接收完成后点击“停止”。\n发送端不会收到手机确认；动画会持续生成冗余帧。');
+}
+$('start').onclick=start;
+$('stop').onclick=()=>{resetEngine();$('stop').disabled=true;$('start').disabled=!packed||!engineReady;message('已停止。可以重新开始传输同一个代码包。');};
+$('fps').onchange=()=>{if(engineReady)$('engine').contentWindow.Main.setFPS(Number($('fps').value));};
+$('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('screen').requestFullscreen();}catch(err){message('浏览器无法全屏，请手动最大化窗口。',true);}};
+window.addEventListener('message',e=>{
+  if(e.source!==$('engine').contentWindow||!e.data||e.data.type!=='codebridge-ready')return;
+  engineReady=true;resetEngine();$('start').disabled=!packed||busy;
+  if(packed)message('发送引擎已就绪，可以开始传输。');
+});
+function ensureEngine() {
+  if(engineLoaded)return;engineLoaded=true;
+  $('engine').srcdoc=new TextDecoder().decode(Uint8Array.from(atob($('engine-source').textContent.trim()),c=>c.charCodeAt(0)));
+  setTimeout(()=>{if(!engineReady&&!isPlain())message('发送引擎尚未就绪。请确认浏览器启用了 JavaScript、WebAssembly 与 WebGL；优先用 Chrome / Chromium 打开。',true);},15000);
+}
+const receiver=qrcodegen.QrCode.encodeText('https://cimbar.org/recv.html',qrcodegen.QrCode.Ecc.MEDIUM), rc=$('receiverqr');
+rc.width=rc.height=(receiver.size+8)*4;const ctx=rc.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,rc.width,rc.height);ctx.fillStyle='#18263c';
+for(let y=0;y<receiver.size;y++)for(let x=0;x<receiver.size;x++)if(receiver.getModule(x,y))ctx.fillRect((x+4)*4,(y+4)*4,4,4);
+// Deliberately expose the package builder for reproducible, offline integration verification.
+window.CodeBridge={addFiles,buildPackage,getPackage:()=>packed,pathName,walk,walkHandle,captureDrop,readDropped,splitPlain,generatePlain,getPlainParts:()=>plainParts.slice()};
+applyMode();
+</script></body></html>

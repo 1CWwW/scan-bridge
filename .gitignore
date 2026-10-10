@@ -1,0 +1,8 @@
+node_modules/
+test-results/
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store
+Thumbs.db
+*.log

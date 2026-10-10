@@ -1,0 +1,16 @@
+{
+  "PicoSHA2-LICENSE": "https://github.com/sz3/libcimbar/blob/v0.6.8/src/third_party_lib/PicoSHA2/LICENSE",
+  "base91-LICENSE": "https://github.com/sz3/libcimbar/blob/v0.6.8/src/third_party_lib/base91/LICENSE",
+  "concurrentqueue-LICENSE.md": "https://github.com/sz3/libcimbar/blob/v0.6.8/src/third_party_lib/concurrentqueue/LICENSE.md",
+  "cxxopts-LICENSE": "https://github.com/sz3/libcimbar/blob/v0.6.8/src/third_party_lib/cxxopts/LICENSE",
+  "fmt-LICENSE": "https://github.com/sz3/libcimbar/blob/v0.6.8/src/third_party_lib/fmt/LICENSE",
+  "intx-LICENSE": "https://github.com/sz3/libcimbar/blob/v0.6.8/src/third_party_lib/intx/LICENSE",
+  "libcorrect-LICENSE": "https://github.com/sz3/libcimbar/blob/v0.6.8/src/third_party_lib/libcorrect/LICENSE",
+  "libpopcnt-LICENSE": "https://github.com/sz3/libcimbar/blob/v0.6.8/src/third_party_lib/libpopcnt/LICENSE",
+  "stb-LICENSE": "https://github.com/sz3/libcimbar/blob/v0.6.8/src/third_party_lib/stb/LICENSE",
+  "wirehair-LICENSE": "https://github.com/sz3/libcimbar/blob/v0.6.8/src/third_party_lib/wirehair/LICENSE",
+  "zstd-COPYING": "https://github.com/sz3/libcimbar/blob/v0.6.8/src/third_party_lib/zstd/COPYING",
+  "zstd-LICENSE": "https://github.com/sz3/libcimbar/blob/v0.6.8/src/third_party_lib/zstd/LICENSE",
+  "opencv-LICENSE": "https://github.com/opencv/opencv/blob/4.12.0/LICENSE",
+  "emscripten-LICENSE": "https://github.com/emscripten-core/emscripten/blob/5.0.0/LICENSE"
+}
