@@ -1,75 +1,83 @@
-# 代码桥 · Code Bridge
+# 扫码桥 · Scan Bridge
 
-通过屏幕把代码传到手机：短代码使用普通文本二维码直接复制；多个文件或文件夹使用 CIMBAR 彩色动画传输。Linux 发送端是一个可双击打开的离线 HTML，无需安装运行环境。
+把电脑上的文字和文件，通过屏幕传到手机。可以粘贴普通文本直接扫码复制，也可以拖入 Word、Excel、PPT、PDF、图片、压缩包或整个文件夹。适合办公、学习和开发等需要取出文本或文件的场景。
 
-An offline, single-file browser tool for transferring text or source files from a desktop screen to a phone. Plain QR codes carry text directly; the file mode uses the upstream CIMBAR optical transfer engine.
+An offline, single-file browser tool for transferring text and arbitrary files from a desktop screen to a phone. Paste text for plain QR codes, or drop documents, images and folders for CIMBAR optical transfer.
 
-![直接文本二维码界面](docs/images/direct-text.png)
+![文本扫码界面](docs/images/direct-text.png)
+
+![办公文件传输界面](docs/images/file-transfer.png)
 
 ## 下载与运行
 
-从 [Releases](https://github.com/1CWwW/code-bridge/releases) 下载 `code-bridge.html`，用 Chrome、Chromium 或 Firefox 打开。也可克隆仓库，直接打开 `dist/code-bridge.html`。
+从 [Releases](https://github.com/1CWwW/scan-bridge/releases) 下载 **`scan-bridge.html`**，双击并用现代浏览器打开，无需安装 Python、Node.js 或其他运行环境。也可以克隆仓库后打开 `dist/scan-bridge.html`。
 
-发送端运行时不请求网络；所有运行依赖都已嵌入。Python 和 Node.js 仅用于修改源码后的构建或测试。
+电脑发送端的依赖全部嵌入 HTML，运行时没有 HTTP/HTTPS 请求。手机接收网页首次加载需要联网；Android 还可选用上游接收应用。内容通过屏幕与相机传递，电脑不需要与手机处于同一网络。
 
-## 两种传递方式
+## 支持哪些内容
 
-| 模式 | 适合 | 手机端 | 内容恢复 |
-| --- | --- | --- | --- |
-| 直接文本二维码 | 粘贴短代码、配置、报错信息 | 支持普通文本读取与复制的扫码工具 | 扫码复制原文，无需 ZIP |
-| 文件传输 | 多个 Java 文件、整个文件夹、ZIP、diff | Safari 打开上游 [CIMBAR 接收页](https://cimbar.org/recv.html)，选择 B 模式 | 自动恢复 ZIP，保留目录和原始文件字节 |
+| 内容 | 用法 | 手机收到什么 |
+| --- | --- | --- |
+| 普通文字、会议记录、网址、代码 | 粘贴文本，生成黑白二维码 | 扫码读取并复制原文 |
+| 单个 Word / Excel / PPT / PDF / 图片等文件 | 拖入文件，点击“准备发送” | 原文件，保留原格式和原字节 |
+| 多个文件、文件夹 | 拖入后准备发送 | ZIP，解压恢复目录与原文件 |
+| 长文本、文件加说明 | 文件模式中粘贴文字说明 | ZIP 内的 `pasted-text.txt` 和所选文件 |
 
-**直接文本**：粘贴代码，点击“生成文本二维码”。默认每张 1200 个 UTF-8 字节，可选 600 或 2200。长文本会分成多张，按界面显示的顺序扫描、复制、拼接。二维码只含原文片段，不含链接或序号。iPhone 系统相机可能不展示普通文本，需要支持文本复制的扫码工具。
+不限制扩展名：DOC / DOCX、XLS / XLSX、PPT / PPTX、WPS 文件、PDF、TXT、图片、音视频及其他二进制文件都按原字节处理。不依赖 Office，不转换文档格式。手机查看、编辑或播放文件，需要对应软件。
 
-**文件传输**：切换模式，拖入文件或文件夹，点击“压缩并准备”，再点击“开始传输”。手机摄像头对准完整彩色码，接收完成后把 ZIP 保存到“文件”App 并解压。接收页首次加载需要手机联网和相机权限；电脑无需联网或与手机连接同一网络。文件夹拖入受浏览器支持影响，可改用“选择文件夹”。
+默认**单文件直传，多文件自动打包**。文件夹、附带说明或摘要、空文件，以及“统一打包为 ZIP”使用 ZIP。单个现有 ZIP 会按原文件发送。摘要和开发目录过滤默认关闭，普通文件夹中的 `build`、`target` 等目录不会自动排除。
 
-默认过滤 `.git`、`target`、`build`、`node_modules` 等目录，可取消过滤。每次最多 5000 个文件，原文件合计 20 MiB、生成 ZIP 25 MiB。ZIP 附带逐文件 SHA-256 清单；可选生成 `__codebridge__/AI-context.md` 以汇集 UTF-8 源码和问题说明。
+## 电脑与手机
 
-详细步骤、容量说明和兼容性见 [使用说明](docs/usage.zh-CN.md)。项目用于传递你有权导出的内容，不提供隐藏操作或规避审计功能。
+| 设备 | 使用方式 | 说明 |
+| --- | --- | --- |
+| Windows、macOS、Linux 电脑 | Chrome / Chromium / Edge / Firefox 等现代浏览器打开本地 HTML | 文件模式需要图形加速；文件夹拖入受浏览器支持影响，可改用“选择文件夹” |
+| iPhone / iPad | Safari 打开 [网页接收端](https://cimbar.org/recv.html) | 允许相机，接收页选择 B 模式 |
+| Android（小米、OPPO、vivo、三星等） | 支持相机的浏览器打开接收页，或使用 [CFC 接收应用](https://github.com/sz3/cfc/releases) | CFC 上游当前正式支持 arm64-v8a，适用范围以其说明为准 |
+| HarmonyOS、其他手机系统 | 支持相机与相关网页能力的系统浏览器打开接收页 | 先用小文件验证，不假设这些系统都能安装 Android 应用 |
 
-## 验证范围与限制
+文本模式使用支持**纯文本读取和复制**的扫码工具。部分系统相机只处理网址而不显示完整文本，需换用文本扫码工具。手机品牌不参与编码；实际接收能力取决于浏览器、相机和接收工具。
 
-自动化验证覆盖二维码独立解码、中文与表情、长文本分段、真实磁盘拖入、目录过滤、ZIP 原字节与校验清单、编辑失效、动画启停，以及发送端没有 HTTP/HTTPS 请求。
+## 快速使用
 
-本地验证使用 Windows Chrome；GitHub 工作流使用 Ubuntu Chromium。**iPhone Safari、真实摄像头链路和具体 Linux 桌面尚需实机验证**，请先试一两个小文件。普通文本扫码工具可能改变复制格式；需要保留原文件换行字节时使用文件模式。彩色动画需要 WebAssembly 和 WebGL，速度取决于屏幕、相机和拍摄条件。发送端没有接收反馈通道，完成状态以手机为准。
+**传文字**：粘贴文字 → “生成文本二维码” → 手机扫码复制。每张可选 600 / 1200 / 2200 个 UTF-8 字节，超出容量会分成多张，按顺序复制拼接。二维码只含原文片段。长文本需要自动恢复时使用文件模式。
 
-## 开发与构建
+**传文件**：切换文件模式 → 拖入或选择文件 → “准备发送” → 手机扫描小二维码打开接收页并允许相机 → 电脑“开始传输” → 手机对准完整彩色动画 → 接收完成后保存原文件或解压 ZIP。
 
-需要 Python 3.10 或更新版本，仅使用标准库：
+每批最多 **5000 个文件**、原始内容合计 **20 MiB**、生成 ZIP 最多 **25 MiB**。大文件分批处理，已经压缩的办公文档、图片、音视频不一定明显缩小。默认 10 FPS，识别慢时试 5 FPS、全屏并调整距离。完成状态以手机为准，电脑没有接收反馈通道。
+
+详细操作见 [使用说明](docs/usage.zh-CN.md)，平台验证范围见 [兼容性说明](docs/compatibility.md)。
+
+## 开发与测试
+
+Python 3.10+ 使用标准库离线构建，并校验本地依赖 SHA-256：
 
 ```sh
 python3 source/build.py
 ```
 
-输出 `dist/code-bridge.html` 和便于检查的 `dist/cimbar-engine.html`。构建校验 vendored 依赖的 SHA-256，不访问网络，输出可重复生成。
+输出 `dist/scan-bridge.html`、兼容早期入口的 `dist/code-bridge.html` 和可检查的 `dist/cimbar-engine.html`。构建结果可重复生成。
 
-```text
-source/app.html          中文界面、文本 QR、文件读取与打包
-source/build.py          依赖校验、发送引擎补丁与单文件构建
-source/vendor/           固定版本依赖、来源清单和原许可证
-dist/                   可直接打开的构建结果
-tests/                  合成数据的浏览器与独立解码测试
-docs/                   使用说明与界面预览
-```
-
-## 测试
-
-需要 Node.js 22+、Python 3.10+。首次安装测试依赖需要联网：
+测试需要 Node.js 22+ 和 Python 3.10+，首次安装测试依赖需联网：
 
 ```sh
 npm ci
 npx playwright install chromium
 python3 -m pip install -r tests/requirements.txt
 python3 source/build.py
+python3 tests/create_documents.py
 npm test
 python3 tests/verify_plain_decode.py
 python3 tests/verify_code_zip.py
+python3 tests/verify_documents.py
 ```
 
-Linux CI 使用 `npx playwright install --with-deps chromium`。可设置 `CHROME_PATH` 指向现有 Chrome/Chromium 可执行文件。测试产物写入被 Git 忽略的 `test-results/`，二维码和 ZIP 样例全部是合成内容。
+Linux CI 使用 `npx playwright install --with-deps chromium`。可设置 `CHROME_PATH` 指向现有 Chrome / Chromium。测试产物写入忽略目录 `test-results/`，办公文档和其他样例全部是合成内容。
+
+工作流在 Windows、Ubuntu、macOS 上检查构建和 Chromium 集成测试。覆盖真实磁盘拖入、独立 QR 解码、Office 与二进制文件原字节校验、单文件直传、多文件 ZIP、目录和空文件、可选摘要、编辑失效、动画启停及发送端离线运行。**真实手机摄像头链路仍需各设备实测**，自动测试不等同于认证所有品牌手机。
 
 ## 许可证与上游
 
-本项目自有界面、构建工具和测试采用 [MIT](LICENSE)。**CIMBAR 及其修改部分采用 MPL-2.0**；其他 JavaScript 库采用 MIT，发送引擎的底层依赖保留各自许可证。生成的单文件包含这些不同许可的组件，不把整个捆绑文件统一改授 MIT。发行文件内也保留完整授权声明。
+自有界面、构建工具和测试采用 [MIT](LICENSE)。**CIMBAR 及其修改部分采用 MPL-2.0**；其他库及底层依赖保留各自许可证。发行文件嵌入完整授权声明。
 
-第三方版本、来源、修改说明以及 CIMBAR 对应源码见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。感谢 [sz3/libcimbar](https://github.com/sz3/libcimbar)、[fflate](https://github.com/101arrowz/fflate)、[js-sha256](https://github.com/emn178/js-sha256) 和 [Project Nayuki](https://www.nayuki.io/page/qr-code-generator-library)。
+来源、版本和对应源码见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。感谢 [CIMBAR](https://github.com/sz3/libcimbar)、[CFC](https://github.com/sz3/cfc)、[fflate](https://github.com/101arrowz/fflate)、[js-sha256](https://github.com/emn178/js-sha256) 和 [Project Nayuki](https://www.nayuki.io/page/qr-code-generator-library)。

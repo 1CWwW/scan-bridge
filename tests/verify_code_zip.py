@@ -7,11 +7,11 @@ with zipfile.ZipFile(root/'code-package.zip') as package:
     for name,text in expected:
         assert package.read(name)==text.encode('utf-8'), name
     assert not any('/target/' in name for name in package.namelist())
-    manifest=json.loads(package.read('__codebridge__/manifest.json'))
+    manifest=json.loads(package.read('__scanbridge__/manifest.json'))
     for file in manifest['files']:
         raw=package.read(file['path'])
         assert len(raw)==file['bytes']
         assert hashlib.sha256(raw).hexdigest()==file['sha256']
-    context=package.read('__codebridge__/AI-context.md').decode('utf-8')
+    context=package.read('__scanbridge__/text-summary.md').decode('utf-8')
     assert '中文😀' in context and '检查 Java 方法' in context
 print('PASS: independent ZIP extraction, all original bytes and SHA-256 hashes verified.')

@@ -3,13 +3,13 @@
 
 <head>
 <!--
-Code Bridge v1.2.1: original wrapper MIT; CIMBAR and modifications MPL-2.0.
-Local source and patches: https://github.com/1CWwW/code-bridge
+Scan Bridge v1.3.0: original wrapper MIT; CIMBAR and modifications MPL-2.0.
+Local source and patches: https://github.com/1CWwW/scan-bridge
 Corresponding CIMBAR encoder source: https://github.com/sz3/libcimbar/tree/v0.6.8
 Complete notices follow.
 MIT License
 
-Copyright (c) 2026 Code Bridge contributors
+Copyright (c) 2026 Scan Bridge contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1627,7 +1627,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -->
 
-  <title>代码桥发送引擎</title>
+  <title>扫码桥发送引擎</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, user-scalable=no">
   
@@ -1986,7 +1986,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   <div id="status"></div>
   <div id="dragdrop" class="dragdrop" title="Drag and drop a file" onclick="Main.clickNav()">
     <div class="drop-message">
-      <p class="msg-default">准备好代码包后，点击“开始传输”</p>
+      <p class="msg-default">准备好文件后，点击“开始传输”</p>
       <p class="msg-error">⌜ Error! WebGL is not enabled :( ⌟</p>
       <p class="msg-default msg-bottom">彩色动画会快速闪动</p>
       <p class="msg-default msg-long">对闪光敏感的人请避免直视动画区域</p>
@@ -2155,7 +2155,7 @@ var Send = function () {
       }
 
       Report.setTitle(filename);
-      Report.setHTML("current-file", filename);
+      document.getElementById("current-file").textContent = filename;
     },
 
     encode_bytes: function (wasmData) {

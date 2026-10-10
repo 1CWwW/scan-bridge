@@ -11,7 +11,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
   fs.writeFileSync(path.join(fixture,'target','ignored.class'),'ignored');
   const browser=await chromium.launch(launchOptions);
   const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(appUrl);await page.locator('#mode').selectOption('files');await page.waitForFunction(()=>engineReady);
+  await page.goto(appUrl);await page.locator('#mode').selectOption('files');await page.waitForFunction(()=>engineReady);await page.locator('#ignore').check();
   const session=await page.context().newCDPSession(page);
   async function diskDrop(files){const data={items:[],files,dragOperationsMask:1};for(const type of ['dragEnter','dragOver','drop'])await session.send('Input.dispatchDragEvent',{type,x:220,y:270,data});}
   await diskDrop([path.join(fixture,'src','Hello.java'),path.join(fixture,'src','中文😀.java')]);
@@ -19,7 +19,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
   await page.locator('#prepare').click();await page.waitForFunction(()=>CodeBridge.getPackage());
   const direct=await page.evaluate(()=>{
     const data=fflate.unzipSync(CodeBridge.getPackage().bytes);
-    return Object.fromEntries(Object.entries(data).filter(([name])=>!name.startsWith('__codebridge__/')).map(([name,bytes])=>[name,new TextDecoder().decode(bytes)]));
+    return Object.fromEntries(Object.entries(data).filter(([name])=>!name.startsWith('__scanbridge__/')).map(([name,bytes])=>[name,new TextDecoder().decode(bytes)]));
   });assert.equal(direct['Hello.java'],java);assert.equal(Object.keys(direct).length,2);
   await page.locator('#clear').click();
   await diskDrop([fixture]);await page.waitForFunction(()=>selected.size===4);

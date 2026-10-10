@@ -8,6 +8,7 @@ import hashlib
 import json
 
 ROOT = Path(__file__).resolve().parent
+version = json.loads((ROOT.parent / 'package.json').read_text(encoding='utf-8'))['version']
 vendor = ROOT / 'vendor'
 manifest = json.loads((vendor / 'manifest.json').read_text(encoding='utf-8'))
 for filename, info in manifest.items():
@@ -23,8 +24,11 @@ engine = engine.replace('Main.init(canvas);', "Main.init(canvas); window.parent.
 engine = engine.replace('function importFile(file) {', 'var _importGeneration = 0;\n  function importFile(file) {\n    const token = ++_importGeneration;')
 engine = engine.replace('reader.onload = function (event) {', 'reader.onload = function (event) {\n      if (token !== _importGeneration) return;')
 engine = engine.replace('importFile: function (file) {', 'cancelImport: function () { _importGeneration++; },\n\n    importFile: function (file) {')
-engine = engine.replace('<title>Cimbar Encoder</title>', '<title>代码桥发送引擎</title>')
-engine = engine.replace('⌜ Tap to start! ⌟', '准备好代码包后，点击“开始传输”')
+engine = engine.replace('<title>Cimbar Encoder</title>', '<title>扫码桥发送引擎</title>')
+engine = engine.replace('⌜ Tap to start! ⌟', '准备好文件后，点击“开始传输”')
+# Filenames are literal text, including on systems that allow < and > in names.
+engine = engine.replace('Report.setHTML("current-file", filename);',
+                        'document.getElementById("current-file").textContent = filename;')
 engine = engine.replace('⚠️⚡ PHOTOSENSITIVITY WARNING!', '彩色动画会快速闪动')
 engine = engine.replace('Photosensitive epilepsy + flickering light = seizure!', '对闪光敏感的人请避免直视动画区域')
 engine = engine.replace('Be safe! Have fun! ⚠️⚡', '手机接收完成后，可点击“停止”')
@@ -37,9 +41,9 @@ notice_files = [ROOT.parent / 'LICENSE'] + [vendor / name for name in
 notice_files += sorted((path for path in (vendor / 'cimbar-notices').iterdir() if path.name != 'sources.json'),
                        key=lambda path: path.name)
 notices = '\n\n'.join(path.read_text(encoding='utf-8') for path in notice_files)
-notice = '''<!--
-Code Bridge v1.2.1: original wrapper MIT; CIMBAR and modifications MPL-2.0.
-Local source and patches: https://github.com/1CWwW/code-bridge
+notice = f'''<!--
+Scan Bridge v{version}: original wrapper MIT; CIMBAR and modifications MPL-2.0.
+Local source and patches: https://github.com/1CWwW/scan-bridge
 Corresponding CIMBAR encoder source: https://github.com/sz3/libcimbar/tree/v0.6.8
 Complete notices follow.
 ''' + notices.replace('-->', '-- >') + '\n-->\n'
@@ -50,7 +54,7 @@ html = template.replace('<!--BUNDLED_LIBRARIES-->', libraries).replace('__ENGINE
 html = html.replace('<head>', '<head>\n' + notice, 1)
 output = ROOT.parent / 'dist'
 output.mkdir(exist_ok=True)
-for filename, content in [('code-bridge.html', html), ('cimbar-engine.html', engine)]:
+for filename, content in [('scan-bridge.html', html), ('code-bridge.html', html), ('cimbar-engine.html', engine)]:
     target = output / filename
     target.write_text(content, encoding='utf-8', newline='\n')
     print(target.relative_to(ROOT.parent))

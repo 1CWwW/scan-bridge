@@ -10,7 +10,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
   await page.goto(appUrl);
   assert.equal(await page.locator('#mode').inputValue(),'plain');
   assert(await page.locator('#download').isHidden());assert(await page.locator('#start').isHidden());
-  const samples=['package demo;\n\npublic class Hello {\n    // 中文注释 😀\n    String text = "你好 & <tag>";\n}\n',' \t\n  保留空格😀 \'"<>\\\n ',new Array(900).fill('汉').join('')+'😀\nEND',new Array(2200).fill('A').join('')];
+  const samples=['会议记录\n\n主题：下周活动安排\n1. 周一准备资料\n2. 周三核对预算\n3. 周五确认结果 😀\n',' \t\n  保留空格😀 \'"<>\\\n ',new Array(900).fill('汉').join('')+'😀\nEND',new Array(2200).fill('A').join(''),'package demo;\npublic class Hello {\n  // 中文注释 😀\n  String text = "你好 & <tag>";\n}\n'];
   let qrCount=0;
   for(let i=0;i<samples.length;i++){
     const limit=i===3?'2200':'1200';await page.locator('#plain-limit').selectOption(limit);

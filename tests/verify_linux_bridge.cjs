@@ -12,6 +12,7 @@ const fs=require('fs'), path=require('path'), crypto=require('crypto'), assert=r
   await page.goto(appUrl);
   await page.locator('#mode').selectOption('files');
   await page.waitForFunction(()=>engineReady,{timeout:30000});
+  await page.locator('#ignore').check();await page.locator('#context').check();
   const result=await page.evaluate(async()=>{
     const data=[['demo/src/main/java/Hello.java','package demo;\r\npublic class Hello {\r\n  // 中文😀\r\n  String name = "<tag> & 测试";\r\n}\r\n'],['demo/pom.xml','<project>\n  <name>测试</name>\n</project>\n'],['demo/empty.txt',''],['demo/target/ignored.class','SHOULD NOT BE INCLUDED']];
     const large=Array.from({length:400},(_,i)=>'    public String method'+i+'(String value) { return "value-'+i+'" + value; }').join('\n');
@@ -52,7 +53,7 @@ const fs=require('fs'), path=require('path'), crypto=require('crypto'), assert=r
   assert.equal(await page.evaluate(()=>CodeBridge.getPackage()),null);
   const rejection=await page.evaluate(()=>{
     const outcomes=[];
-    for(const name of ['../escape.java','/abs.java','C:/bad.java','__codebridge__/manifest.json']){try{CodeBridge.pathName(name);outcomes.push(false);}catch{outcomes.push(true);}}
+    for(const name of ['../escape.java','/abs.java','C:/bad.java','__scanbridge__/manifest.json']){try{CodeBridge.pathName(name);outcomes.push(false);}catch{outcomes.push(true);}}
     try{CodeBridge.addFiles([{path:'demo/pom.xml',file:new File(['duplicate'],'pom.xml')}]);outcomes.push(false);}catch{outcomes.push(true);}
     return outcomes;
   });assert(rejection.every(Boolean),'Unsafe or duplicate paths accepted');
