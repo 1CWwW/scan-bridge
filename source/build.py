@@ -6,6 +6,7 @@ from pathlib import Path
 import base64
 import hashlib
 import json
+import shutil
 
 ROOT = Path(__file__).resolve().parent
 version = json.loads((ROOT.parent / 'package.json').read_text(encoding='utf-8'))['version']
@@ -65,3 +66,17 @@ hash_library = '<script>\n' + (vendor / 'sha256.js').read_text(encoding='utf-8')
 merge = merge.replace('<!--MERGE_LIBRARIES-->', hash_library + '\n' + large).replace('<head>', '<head>\n' + notice, 1)
 (output / 'merge-parts.html').write_text(merge, encoding='utf-8', newline='\n')
 (output / 'merge-parts.py').write_text((ROOT / 'merge-parts.py').read_text(encoding='utf-8'), encoding='utf-8', newline='\n')
+receiver = output / 'receiver'
+receiver.mkdir(exist_ok=True)
+for source, target in [('receiver.html', 'index.html'), ('receiver.js', 'receiver.js'),
+                       ('receiver-store.js', 'receiver-store.js'), ('receiver-decoder.js', 'decoder-worker.js'),
+                       ('receiver-sw.js', 'sw.js'), ('large-files.js', 'protocol.js')]:
+    content = (ROOT / source).read_text(encoding='utf-8').replace('__VERSION__', version)
+    if target.endswith('.html'):
+        content = content.replace('<head>', '<head>\n' + notice, 1)
+    (receiver / target).write_text(content, encoding='utf-8', newline='\n')
+for source, target in [('sha256.js','sha256.js'),('receiver/cimbar_js.js','cimbar_js.js'),
+                       ('receiver/cimbar_js.2026-08-21T2336.wasm','cimbar_js.2026-08-21T2336.wasm')]:
+    shutil.copyfile(vendor / source, receiver / target)
+(receiver / 'LICENSES.txt').write_text(notice, encoding='utf-8', newline='\n')
+print('dist/receiver/ (HTTPS or localhost required for camera and persistent storage)')

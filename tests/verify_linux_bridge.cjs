@@ -47,7 +47,7 @@ const fs=require('fs'), path=require('path'), crypto=require('crypto'), assert=r
   assert.equal(await page.locator('#stop').isDisabled(),true);
   // Restart works and newly edited text invalidates the previously prepared archive.
   await page.locator('#start').click();await page.waitForTimeout(200);
-  await page.locator('details summary').click();
+  await page.locator('#text-label').click();
   await page.locator('#text').fill('修改后的说明');
   assert.equal(await page.locator('#start').isDisabled(),true);
   assert.equal(await page.evaluate(()=>CodeBridge.getPackage()),null);

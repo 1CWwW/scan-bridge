@@ -9,3 +9,4 @@
 *.yml text eol=lf
 *.png binary
 LICENSE text eol=lf
+*.wasm binary

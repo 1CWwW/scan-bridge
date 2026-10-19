@@ -6,7 +6,7 @@
 </style>
 <style>[hidden]{display:none!important}#stats{overflow-wrap:anywhere}#screen{height:clamp(380px,calc(100vh - 320px),660px);min-height:380px}#screen:fullscreen{height:100vh}#plainbox{height:100%;width:100%;display:grid;place-items:center;padding:16px}#plainqr{display:block;max-width:100%;max-height:100%}.plain-mode #text{min-height:350px}.plain-mode details summary{font-weight:650}#plain-snippet{overflow-wrap:anywhere;margin-top:12px}@media(max-width:1040px){#screen{height:650px}}@media(max-width:600px){#screen{height:92vw}}</style></head>
 <body>
-<header><div><h1>扫码桥</h1><p class="muted">粘贴文本直接扫码复制，或拖入文档、图片与文件夹</p></div><span class="tag">v1.4 · Windows / macOS / Linux</span></header>
+<header><div><h1>扫码桥</h1><p class="muted">粘贴文本直接扫码复制，或拖入文档、图片与文件夹</p></div><span class="tag">v1.5 · Windows / macOS / Linux</span></header>
 <main><section class="card"><h2>01　选择文本或文件</h2>
 <div class="row"><label>传递方式 <select id="mode"><option value="plain" selected>直接文本二维码 · 扫码复制</option><option value="files">文件传输 · 彩色动画</option></select></label></div>
 <div id="file-controls" hidden>
@@ -16,7 +16,7 @@
 <div><label><input id="ignore" type="checkbox"> 忽略开发目录（.git / target / build / node_modules 等）</label></div>
 <div><label><input id="context" type="checkbox"> 附带文本内容摘要（可选，仅 UTF-8 文本）</label></div>
 <div class="row"><label>文件处理 <select id="packaging"><option value="auto" selected>自动：单文件直传，多文件打包</option><option value="zip">打包为 ZIP（小批量）</option><option value="tar">打包为 TAR（适合大文件夹）</option></select></label></div>
-<p class="small muted">支持超过 2 GB 的文件。大文件按 8 MiB 分卷，接收后校验合并；大文件夹自动使用 TAR。扫码传几 GB 通常耗时很长。</p><div id="files"><p class="muted">尚未选择文件</p></div>
+<p class="small muted">支持超过 2 GB 的文件。大文件由接收页自动收集 8 MiB 数据块，最终保存一个完整文件；大文件夹自动使用 TAR。扫码传几 GB 通常耗时很长。</p><div id="files"><p class="muted">尚未选择文件</p></div>
 </div>
 <details id="text-section" open><summary id="text-label">粘贴文本</summary><textarea id="text" placeholder="在这里粘贴文字、会议记录、网址、代码或其他文本……"></textarea><p id="text-hint" class="small muted">二维码里直接包含输入框原文，手机扫码后复制即可。</p></details>
 <div id="plain-options" class="row"><label>每张容量 <select id="plain-limit"><option value="600">600 字节 · 更易扫描</option><option value="1200" selected>1200 字节 · 推荐</option><option value="2200">2200 字节 · 减少张数</option></select></label></div>
@@ -28,10 +28,10 @@
 <section class="card"><h2>02　用手机接收</h2>
 <div id="screen"><iframe id="engine" hidden title="CIMBAR 彩色动画发送区域"></iframe><div id="plainbox"><canvas id="plainqr" hidden></canvas><span id="plain-empty" class="muted">粘贴文本后生成二维码</span></div></div>
 <div class="row"><button class="primary" id="start" hidden disabled>开始传输</button><button id="stop" hidden disabled>停止</button><button id="previous" disabled>上一张</button><span id="plain-page">待生成</span><button id="next" disabled>下一张</button><button id="fullscreen">放大 / 全屏</button><button id="save-plain" disabled>保存二维码</button><label id="fps-label" hidden>帧率 <select id="fps"><option value="5">5 FPS</option><option value="10" selected>10 FPS</option><option value="15">15 FPS</option><option value="20">20 FPS</option></select></label></div>
-<div id="volume-controls" class="help" hidden><strong id="volume-label"></strong><div class="row"><button id="volume-prev">上一卷</button><label>卷号 <input id="volume-index" type="number" min="1" value="1" style="width:80px"></label><button id="volume-go">跳转</button><button id="volume-next">下一卷</button><button id="save-volume">保存当前卷</button></div><p>手机完整接收并保存当前 .sbpart 文件后，再切换下一卷。可重扫或跳转；重新选择同一原文件可继续原卷号。全部卷收齐后使用还原工具合并，不能直接把分卷当原文件打开。</p><p><a href="https://github.com/1CWwW/scan-bridge/releases/latest/download/merge-parts.html" target="_blank" rel="noopener">下载浏览器分卷还原工具</a> · <a href="https://github.com/1CWwW/scan-bridge/releases/latest/download/merge-parts.py" target="_blank" rel="noopener">下载 Python 合并工具</a></p><p class="small muted">超过 2 GB 的最终合并建议在电脑 Chrome/Edge 写入磁盘，或使用 Python。部分手机浏览器无法合并这么大的文件。</p></div>
+<div id="volume-controls" class="help" hidden><strong id="volume-label"></strong><div class="row"><button id="volume-prev">上一块</button><label>块号 <input id="volume-index" type="number" min="1" value="1" style="width:80px"></label><button id="volume-go">跳转</button><button id="volume-next">下一块</button><button id="save-volume">保存当前卷</button></div><p>新接收页自动写盘、去重、恢复进度，最后保存一个完整文件，无需逐块保存和手动合并。手机显示当前块已写入后切换下一块，或使用定时循环补齐缺块。</p><div class="row"><label><input id="auto-cycle" type="checkbox"> 定时循环所有数据块</label><label>每块 <input id="cycle-seconds" type="number" min="30" max="3600" value="180" style="width:80px"> 秒</label></div><p class="small muted">定时循环不代表手机已接收。按手机进度调整停留时间；缺块可按块号补扫。使用旧接收器时仍需保存 .sbpart，再使用还原工具。</p><p><a href="https://github.com/1CWwW/scan-bridge/releases/latest/download/merge-parts.html" target="_blank" rel="noopener">下载浏览器分卷还原工具</a> · <a href="https://github.com/1CWwW/scan-bridge/releases/latest/download/merge-parts.py" target="_blank" rel="noopener">下载 Python 合并工具</a></p><p class="small muted">新接收页使用浏览器磁盘存储，容量由配额及设备空间决定。手机上的多 GB 接收与最终导出仍需实机验证。</p></div>
 <div id="plain-help" class="help"><strong>扫码后直接复制文本</strong><p>二维码内容就是原文，不生成 ZIP，也不添加链接、序号或包装文本。请使用支持普通文本读取和复制的扫码工具。</p><p>长文本会分成多张，需要按顺序复制、拼接，不额外插入空格或换行。若系统相机未显示文本内容，可换用支持文本的扫码工具。</p><p id="plain-snippet" class="small muted"></p></div>
-<div id="file-help" class="help" hidden><div class="row"><label>手机系统 <select id="phone"><option value="auto">通用 / 不确定</option><option value="ios">iPhone / iPad</option><option value="android">Android（小米、OPPO、vivo、三星等）</option><option value="other">HarmonyOS / 其他系统</option></select></label></div><p id="receiver-guide"></p><p><a id="android-receiver" href="https://github.com/sz3/cfc/releases" target="_blank" rel="noopener" hidden>Android 接收应用（上游 CFC）</a></p><div class="receiver"><canvas id="receiverqr"></canvas><div>用手机扫描左侧二维码，<br>在手机浏览器打开 <a href="https://cimbar.org/recv.html" target="_blank" rel="noopener">配套接收页</a>，允许使用后置相机。<div class="small muted">小二维码打开接收工具；文件由上方彩色动画传递。</div></div></div>
-<ol><li>电脑点击“开始传输”，手机摄像头对准完整彩色码。</li><li>接收页建议选择 <strong>B</strong> 模式。保持整个码在画面内，等待文件完成。</li><li id="receiver-save">接收完成后保存文件；收到 ZIP 时，用文件管理工具解压。</li></ol>
+<div id="file-help" class="help" hidden><div class="row"><label>手机系统 <select id="phone"><option value="auto">通用 / 不确定</option><option value="ios">iPhone / iPad</option><option value="android">Android（小米、OPPO、vivo、三星等）</option><option value="other">HarmonyOS / 其他系统</option></select></label></div><p id="receiver-guide"></p><p><a id="android-receiver" href="https://github.com/sz3/cfc/releases" target="_blank" rel="noopener" hidden>Android 接收应用（上游 CFC）</a></p><div class="receiver"><canvas id="receiverqr"></canvas><div>用手机扫描左侧二维码，<br>在手机浏览器打开 <a id="receiver-link" href="https://1CWwW.github.io/scan-bridge/receiver/" target="_blank" rel="noopener">配套接收页</a>，允许使用后置相机。<div class="small muted">小二维码打开接收工具；文件由上方彩色动画传递。</div></div></div>
+<details><summary>自托管接收地址</summary><label>HTTPS 接收网址 <input id="receiver-url" type="url" value="https://1CWwW.github.io/scan-bridge/receiver/" style="width:100%"></label><button id="receiver-update">更新接收二维码</button></details><ol><li>电脑点击“开始传输”，手机摄像头对准完整彩色码。</li><li>新接收页已固定为 <strong>B</strong> 模式。保持整个码在画面内，等待文件完成。</li><li id="receiver-save">接收完成后保存文件；收到 ZIP 时，用文件管理工具解压。</li></ol>
 <p class="small muted">接收页首次加载需要手机联网；电脑发送端无需联网。开始后画面会快速闪动。识别慢时降低帧率、使用全屏并调整拍摄距离。</p></div>
 </section></main>
 <footer>发送引擎：CIMBAR v0.6.8（MPL-2.0），压缩：fflate v0.8.2（MIT）。适用于有现代浏览器的电脑；不同手机的实际扫码效果需先用小文件验证。<a href="https://github.com/sz3/libcimbar" target="_blank" rel="noopener">上游项目</a> · <a href="https://github.com/sz3/libcimbar/tree/v0.6.8" target="_blank" rel="noopener">发送引擎对应源码</a></footer>
@@ -50,6 +50,7 @@ const isPlain=()=> $('mode').value==='plain';
 const fileSize=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KiB':n<1073741824?(n/1048576).toFixed(2)+' MiB':(n/1073741824).toFixed(2)+' GiB';
 function message(text, error=false) { $('status').textContent=text; $('status').className=error?'error':''; }
 function invalidate() {
+  stopCycle();
   generation++;
   packed=null;activePayload=null;volumeIndex=0;$('volume-controls').hidden=true; $('start').disabled=true; $('download').disabled=true; $('stop').disabled=true;
   plainParts=[];plainIndex=0;plainQr=null;
@@ -243,16 +244,16 @@ async function buildPackage() {
     }
     if(!valid())return;
     packed=result;packed.plan=ScanLarge.plan(result.blob.size);
-    $('stats').textContent=result.fileCount+' 个原始文件\n原始 '+fileSize(rawSize)+' → 待传 '+fileSize(result.blob.size)+'\n'+result.fileName+'\n'+(packed.plan.split?'共 '+packed.plan.count+' 卷，每卷最多 8 MiB；收齐后校验合并。':'直接传输，无需分卷。')+'\nSHA-256: '+result.sha256;
+    $('stats').textContent=result.fileCount+' 个原始文件\n原始 '+fileSize(rawSize)+' → 待传 '+fileSize(result.blob.size)+'\n'+result.fileName+'\n'+(packed.plan.split?'共 '+packed.plan.count+' 块，每块最多 8 MiB；接收页自动恢复完整文件。':'直接传输，无需分卷。')+'\nSHA-256: '+result.sha256;
     $('download').disabled=false;$('download').textContent=result.archive?'保存文件包':'保存原文件';
     await selectVolume(0,token);
-    if(valid())message(packed.plan.split?'准备完成。逐卷接收并保存，再用分卷还原工具合并。':'准备完成。在手机打开接收工具后，点击“开始传输”。');
+    if(valid())message(packed.plan.split?'准备完成。在新接收页自动收集数据块，收齐后保存一个完整文件。':'准备完成。在手机打开接收工具后，点击“开始传输”。');
   }catch(err){if(valid()){packed=null;activePayload=null;$('start').disabled=true;$('download').disabled=true;message('准备失败：'+err.message,true);}}
   finally{lock(false);$('start').disabled=!packed||!activePayload||!engineReady;$('progress').value=100;}
 }
 async function selectVolume(index,token=generation){
   if(!packed)return;
-  if(!Number.isInteger(index)||index<0||index>=packed.plan.count){message('卷号超出范围。',true);return;}
+  if(!Number.isInteger(index)||index<0||index>=packed.plan.count){message('块号超出范围。',true);return;}
   const item=packed;
   activePayload=null;$('start').disabled=true;$('stop').disabled=true;
   if(engineReady)resetEngine();
@@ -262,17 +263,18 @@ async function selectVolume(index,token=generation){
     if(token!==generation||packed!==item)return;
     activePayload=payload;volumeIndex=index;
     $('volume-controls').hidden=!item.plan.split;
-    $('volume-label').textContent='第 '+(index+1)+' / '+item.plan.count+' 卷 · '+fileSize(payload.size);
+    $('volume-label').textContent='第 '+(index+1)+' / '+item.plan.count+' 块 · '+fileSize(payload.size);
     $('volume-index').value=index+1;$('volume-index').max=item.plan.count;
     $('volume-prev').disabled=index===0;$('volume-next').disabled=index+1===item.plan.count;
     $('volume-go').disabled=$('save-volume').disabled=false;
     $('start').disabled=!engineReady;
-    message(item.plan.split?'当前为第 '+(index+1)+' / '+item.plan.count+' 卷。'+(index+1===item.plan.count?'收齐所有卷后，使用还原工具合并。':'手机保存完成后再切换下一卷。'):'文件已就绪。');
+    message(item.plan.split?'当前为第 '+(index+1)+' / '+item.plan.count+' 块。'+(index+1===item.plan.count?'接收页收齐后会自动校验完整文件。':'手机确认当前块写入后切换下一块。'):'文件已就绪。');
   }catch(error){if(token===generation)message(error.message,true);}
 }
-$('volume-prev').onclick=()=>selectVolume(volumeIndex-1);
-$('volume-next').onclick=()=>selectVolume(volumeIndex+1);
-$('volume-go').onclick=()=>selectVolume(Number($('volume-index').value)-1);
+async function changeVolume(index){const playing=!$('stop').disabled;stopCycle();await selectVolume(index);if(playing&&activePayload)start();}
+$('volume-prev').onclick=()=>changeVolume(volumeIndex-1);
+$('volume-next').onclick=()=>changeVolume(volumeIndex+1);
+$('volume-go').onclick=()=>changeVolume(Number($('volume-index').value)-1);
 function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 $('save-volume').onclick=()=>{if(activePayload)downloadBlob(activePayload,activePayload.name);};
 $('cancel-prepare').onclick=()=>{invalidate();message('已取消准备。');};
@@ -345,6 +347,16 @@ if(typeof ResizeObserver!=='undefined')new ResizeObserver(paintPlain).observe($(
 else window.addEventListener('resize',paintPlain);
 function saveZip(){if(packed)downloadBlob(packed.blob,packed.fileName);}
 $('download').onclick=saveZip;
+let cycleTimer=null,cycleToken=0;
+function stopCycle(){clearTimeout(cycleTimer);cycleTimer=null;cycleToken++;}
+function scheduleCycle(){
+  stopCycle();if(!packed?.plan.split||!$('auto-cycle').checked)return;
+  const seconds=Number($('cycle-seconds').value);
+  const delay=Math.min(3600,Math.max(30,Number.isFinite(seconds)?seconds:180));
+  $('cycle-seconds').value=delay;const item=packed,token=cycleToken,g=generation;
+  cycleTimer=setTimeout(async()=>{if(token!==cycleToken||g!==generation||item!==packed)return;await selectVolume((volumeIndex+1)%item.plan.count);if(token===cycleToken&&g===generation&&item===packed&&activePayload)start();},delay*1000);
+}
+$('auto-cycle').onchange=$('cycle-seconds').onchange=()=>{if(!$('stop').disabled)scheduleCycle();else stopCycle();};
 function start(){
   if(!packed||!activePayload||!engineReady)return;
   const win=$('engine').contentWindow;
@@ -352,11 +364,11 @@ function start(){
   win.document.querySelector('.drop-message').style.display='none';
   win.Main.setFPS(Number($('fps').value));
   win.Main.importFile(activePayload);
-  $('start').disabled=true;$('stop').disabled=false;
+  $('start').disabled=true;$('stop').disabled=false;scheduleCycle();
   message('正在播放彩色动画。请观察手机的接收进度，接收完成后点击“停止”。\n发送端不会收到手机确认；动画会持续生成冗余帧。');
 }
 $('start').onclick=start;
-$('stop').onclick=()=>{resetEngine();$('stop').disabled=true;$('start').disabled=!packed||!activePayload||!engineReady;message('已停止。可以重新开始传输同一份文件。');};
+$('stop').onclick=()=>{stopCycle();resetEngine();$('stop').disabled=true;$('start').disabled=!packed||!activePayload||!engineReady;message('已停止。可以重新开始传输同一份文件。');};
 $('fps').onchange=()=>{if(engineReady)$('engine').contentWindow.Main.setFPS(Number($('fps').value));};
 $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('screen').requestFullscreen();}catch(err){message('浏览器无法全屏，请手动最大化窗口。',true);}};
 window.addEventListener('message',e=>{
@@ -369,9 +381,14 @@ function ensureEngine() {
   $('engine').srcdoc=new TextDecoder().decode(Uint8Array.from(atob($('engine-source').textContent.trim()),c=>c.charCodeAt(0)));
   setTimeout(()=>{if(!engineReady&&!isPlain())message('发送引擎尚未就绪。请确认浏览器启用了 JavaScript、WebAssembly 与 WebGL；优先用 Chrome / Chromium 打开。',true);},15000);
 }
-const receiver=qrcodegen.QrCode.encodeText('https://cimbar.org/recv.html',qrcodegen.QrCode.Ecc.MEDIUM), rc=$('receiverqr');
+function updateReceiverQR(){
+let url;try{url=new URL($('receiver-url').value);if(url.href.length>500||(url.protocol!=='https:'&&!(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname))))throw new Error();}catch{message('接收页需要有效 HTTPS 地址；本机测试可用 localhost。',true);return;}
+$('receiver-link').href=url.href;
+const receiver=qrcodegen.QrCode.encodeText(url.href,qrcodegen.QrCode.Ecc.MEDIUM), rc=$('receiverqr');
 rc.width=rc.height=(receiver.size+8)*4;const ctx=rc.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,rc.width,rc.height);ctx.fillStyle='#18263c';
 for(let y=0;y<receiver.size;y++)for(let x=0;x<receiver.size;x++)if(receiver.getModule(x,y))ctx.fillRect((x+4)*4,(y+4)*4,4,4);
+}
+$('receiver-update').onclick=updateReceiverQR;updateReceiverQR();
 // Deliberately expose the package builder for reproducible, offline integration verification.
 window.ScanBridge=window.CodeBridge={addFiles,buildPackage,getPackage:()=>packed,getActivePayload:()=>activePayload,selectVolume,pathName,walk,walkHandle,captureDrop,readDropped,splitPlain,generatePlain,getPlainParts:()=>plainParts.slice()};
 function updateReceiverGuide() {
@@ -379,7 +396,7 @@ function updateReceiverGuide() {
   const guides={auto:'在支持相机访问的手机浏览器打开接收页；如果扫码后进入应用内网页，请选择“在浏览器打开”。',ios:'iPhone / iPad 请在 Safari 打开接收页并允许相机访问。',android:'Android 可在 Chrome 等浏览器打开接收页，也可使用上游 CFC 接收应用。',other:'在支持相机访问的系统浏览器打开接收页。HarmonyOS 等系统请先用小文件确认兼容性。'};
   $('receiver-guide').textContent=guides[kind];
   $('android-receiver').hidden=kind!=='android';
-  $('receiver-save').textContent=kind==='ios'?'接收后分享到“文件”App；收到 ZIP 时，点击解压。':'接收后保存到下载目录或文件管理工具；收到 ZIP 时，先解压。';
+  $('receiver-save').textContent=kind==='ios'?'收齐后点击保存完整文件，导出到“文件”App；ZIP/TAR 需解压。':'收齐后点击保存完整文件，导出到下载目录；ZIP/TAR 需解压。';
 }
 $('phone').onchange=updateReceiverGuide;updateReceiverGuide();
 applyMode();

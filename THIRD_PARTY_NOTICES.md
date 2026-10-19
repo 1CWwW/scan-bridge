@@ -13,7 +13,7 @@ Download URLs and SHA-256 digests for the exact local snapshots are recorded in 
 
 ## CIMBAR source and modifications
 
-The original sender comes from [the v0.6.8 release asset](https://github.com/sz3/libcimbar/releases/download/v0.6.8/cimbar_js.html). The corresponding C++/WebAssembly encoder source and upstream build instructions are available in [sz3/libcimbar at v0.6.8](https://github.com/sz3/libcimbar/tree/v0.6.8). The encoding binary is unchanged.
+The original sender comes from [the v0.6.8 release asset](https://github.com/sz3/libcimbar/releases/download/v0.6.8/cimbar_js.html). The corresponding C++/WebAssembly encoder source and upstream build instructions are available in [sz3/libcimbar at v0.6.8](https://github.com/sz3/libcimbar/tree/v0.6.8). The encoding binary is unchanged. The receiver also vendors the unmodified `cimbar_js.2026-08-21T2336.js` and `.wasm` members of the same release's `cimbar.wasm.tar.gz`, under `source/vendor/receiver/`. Their archive member names and exact SHA-256 digests are recorded in the manifest. Corresponding decoder source is in the same v0.6.8 source tree. Our `receiver-decoder.js` is an MIT adapter that calls the exported decoder API; it does not modify the binary or copy the upstream receiver UI.
 
 `source/build.py` supplies all local changes to the sender's HTML/JavaScript: remove network-oriented PWA/service-worker setup, add a parent initialization notification, invalidate stale FileReader callbacks, and adjust the sender's labels and presentation, and render filenames as literal text. These modifications to CIMBAR remain under MPL-2.0. `dist/cimbar-engine.html` is the readable, patched HTML/JavaScript, including the unchanged embedded encoder. Rebuilding needs only Python and the vendored files.
 

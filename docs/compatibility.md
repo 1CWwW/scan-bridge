@@ -15,7 +15,7 @@ CI 使用无界面 Chromium 和软件图形加速，检查本地 HTML、文件�
 
 ## 手机端
 
-文本二维码使用支持 UTF-8 文本读取与复制的工具。文件模式使用上游 [网页接收端](https://cimbar.org/recv.html)；Android 另有上游 [CFC](https://github.com/sz3/cfc) 应用入口，正式支持范围以其说明为准。
+文本二维码使用支持 UTF-8 文本读取与复制的工具。文件模式默认使用 [扫码桥自动接收端](https://1CWwW.github.io/scan-bridge/receiver/)；Android 另有上游 [CFC](https://github.com/sz3/cfc) 应用入口，正式支持范围以其说明为准。
 
 iOS 提示使用 Safari；Android 提示浏览器或 CFC；HarmonyOS 及其他系统提示先确认浏览器相机可用。网页相机需要安全上下文和用户授权，见 [MDN 相机 API 说明](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)。目前没有真实手机摄像头端到端测试记录，不声称认证所有品牌和系统。
 
@@ -30,3 +30,15 @@ iOS 提示使用 Safari；Android 提示浏览器或 CFC；HarmonyOS 及其他�
 测试完整读取并独立核对一个 2 GiB + 129 字节文件的 SHA-256，生成其首末分卷，另外测试 5 GiB 偏移算术（不是 5 GiB 实际传输）。35 MiB 文件完整分卷，浏览器与 Python 独立还原；验证缺卷、重复卷、混用卷和损坏卷拒绝，TAR 的 Unicode 路径及逐文件 / 整包校验值。
 
 浏览器写盘生命周期使用模拟 writer 检查，不自动操作系统保存对话框。真实手机拍摄、2 GiB 的完整光学传输和所有卷的手机保存尚未实测。浏览器还原页仅在具备 File System Access 写盘接口时提供大文件流式合并；其他浏览器内存合并限 128 MiB，超过时拒绝并提示使用电脑或 Python。
+
+## 新接收页的验证范围
+
+自动接收页按能力检测 HTTPS / localhost、OPFS、Dedicated Worker 中的 `createSyncAccessHandle` 和 Web Locks。Safari 的后台同步写盘能力与桌面保存选择器不同，本实现不要求 iPhone 具备 `showSaveFilePicker`。相机入口使用视频画布读取，避免强制依赖 WebCodecs 的 VideoFrame 格式。
+
+本地自动化实际接收 201 MiB + 123 字节文件并导出到磁盘，与独立 Node.js SHA-256 相符；覆盖乱序、重复、混入、损坏、撕裂日志及刷新恢复、单写入锁和离线缓存。17 MiB + 91 字节文件实际经过发送器生成的彩色画面、上游 WASM 提取/喷泉码/解压及本地 OPFS 恢复；这没有模拟手机拍摄的光学失真，也不是吞吐量测试。
+
+CI 默认运行 201 MiB 接收测试；设置 `SCANBRIDGE_RECEIVE_GIB_TEST=1` 可运行 2 GiB + 129 字节的完整写盘接收与导出压力测试，使用普通浏览器持久目录并需要约 7 GiB 临时磁盘空间。默认无痕浏览器存储的实际限制可能小于报告配额；遇到写盘异常不提交该块。不要把浏览器配额估计当作可用容量保证。
+
+没有任何真实手机数百 MB / 多 GB 全链路通过记录；HarmonyOS、旧版 Safari、应用内浏览器及无痕模式均需设备验证。不支持所需 API 时会明确拒绝启用自动接收。旧版独立 `merge-parts.html` 的 128 MiB 回退限制依旧存在。
+
+Windows 本地普通 Chrome 存储的额外压力测试已完成：2 GiB + 129 字节实际接收、写盘、乱序/损坏恢复、完整导出和离线刷新后的全文件复核全部通过，导出摘要与独立 Node.js 一致。该结果是存储与接收会话测试，不等于手机光学传输了 2 GiB。

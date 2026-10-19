@@ -1,7 +1,7 @@
 /* Scan Bridge large-file protocol and bounded-memory readers. MIT License. */
 (function (root) {
   'use strict';
-  const MiB=1024*1024, PART_SIZE=8*MiB, DIRECT_SIZE=16*MiB, READ_SIZE=MiB;
+  const MiB=1024*1024, PART_SIZE=8*MiB, DIRECT_SIZE=8*MiB, READ_SIZE=MiB;
   const magic=new TextEncoder().encode('SCANBRIDGE-PART-1\n');
   const digest=value=>/^[a-f0-9]{64}$/.test(value);
   const check=valid=>{if(valid&&!valid())throw new Error('操作已取消。');};
@@ -49,14 +49,19 @@
     let h;
     try{h=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await file.slice(magic.length+4,magic.length+4+length).arrayBuffer()));}
     catch{throw new Error('分卷信息损坏：'+file.name);}
-    const numbers=['totalBytes','partIndex','partCount','partSize','offset','bytes'];
-    if(h.format!=='scanbridge-part-1'||!safeName(h.name)||!digest(h.wholeSha256)||!digest(h.sha256)||
-       numbers.some(k=>!Number.isSafeInteger(h[k])||h[k]<0)||h.partSize!==PART_SIZE||h.totalBytes<=DIRECT_SIZE||
-       h.partIndex<1||h.partCount!==Math.ceil(h.totalBytes/PART_SIZE)||h.partIndex>h.partCount||
-       h.offset!==(h.partIndex-1)*PART_SIZE||h.bytes!==Math.min(PART_SIZE,h.totalBytes-h.offset))throw new Error('分卷信息不合法：'+file.name);
+    validateHeader(h);
     const dataOffset=magic.length+4+length;
     if(file.size-dataOffset!==h.bytes)throw new Error('分卷长度不完整：'+file.name);
     return {file,header:h,dataOffset};
+  }
+  function validateHeader(h){
+    const numbers=['totalBytes','partIndex','partCount','partSize','offset','bytes'];
+    if(!h||h.format!=='scanbridge-part-1'||!safeName(h.name)||!digest(h.wholeSha256)||!digest(h.sha256)||
+       numbers.some(k=>!Number.isSafeInteger(h[k])||h[k]<0)||h.partSize!==PART_SIZE||h.totalBytes<=DIRECT_SIZE||
+       h.partIndex<1||h.partCount!==Math.ceil(h.totalBytes/PART_SIZE)||h.partIndex>h.partCount||
+       h.offset!==(h.partIndex-1)*PART_SIZE||h.bytes!==Math.min(PART_SIZE,h.totalBytes-h.offset))throw new Error('数据块信息不合法。');
+    if(h.mime!==undefined&&(typeof h.mime!=='string'||h.mime.length>255))throw new Error('文件类型信息不合法。');
+    return h;
   }
   async function inspectParts(files){
     if(!files.length)throw new Error('请选择全部 .sbpart 分卷。');
@@ -122,5 +127,5 @@
     push(new Uint8Array(1024));check(valid);
     return {blob:new Blob(chunks,{type:'application/x-tar'}),sha256:whole.hex(),fileCount:manifest.length};
   }
-  root.ScanLarge={MiB,PART_SIZE,DIRECT_SIZE,READ_SIZE,magic,plan,hashBlob,makePart,readHeader,inspectParts,mergeParts,tarFiles,safeName};
+  root.ScanLarge={MiB,PART_SIZE,DIRECT_SIZE,READ_SIZE,magic,plan,hashBlob,makePart,readHeader,validateHeader,inspectParts,mergeParts,tarFiles,safeName};
 })(globalThis);
