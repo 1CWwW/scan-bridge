@@ -37,6 +37,9 @@ jobs:
       - run: python -m pip install -r tests/requirements.txt
       - run: python tests/create_documents.py
       - run: npm test
+      - name: Recover a full incompressible optical block
+        if: runner.os == 'Linux'
+        run: npm run test:dense
       - run: python tests/verify_plain_decode.py
       - run: python tests/verify_code_zip.py
       - run: python tests/verify_documents.py

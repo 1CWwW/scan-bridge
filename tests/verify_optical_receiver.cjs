@@ -58,9 +58,9 @@ const assert=require('node:assert/strict');
     assert(complete.state.ready);assert.equal(complete.hash,complete.expected);assert.deepEqual(errors,[]);
     await page.evaluate(()=>document.getElementById('sender-test').contentWindow.ScanBridge.selectVolume(0));
     await sender.locator('#auto-cycle').check();await page.clock.install();
-    await sender.locator('#start').click();await page.clock.fastForward(180000);
+    await sender.locator('#start').click();await page.clock.fastForward(600000);
     await page.waitForFunction(()=>document.getElementById('sender-test').contentWindow.eval('volumeIndex')===1);
-    await sender.locator('#stop').click();await page.clock.fastForward(360000);
+    await sender.locator('#stop').click();await page.clock.fastForward(1200000);
     assert.equal(await page.evaluate(()=>document.getElementById('sender-test').contentWindow.eval('volumeIndex')),1,'Stopped carousel continued changing blocks');
     console.log('PASS: 8 MiB incompressible encoding; camera-button/video/capture pipeline: 17 MiB +91-byte real CIMBAR frames -> extractor/fountain/zstd WASM -> OPFS -> whole-file digest; timed carousel + stop. Canvas video replaces the physical camera.');
   }finally{await browser.close();await server.close();}
