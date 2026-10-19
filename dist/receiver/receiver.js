@@ -5,6 +5,7 @@ const store=new Worker('receiver-store.js');
 let requestId=0,current=null,initialized=false,working=false,decoder=null,decoderReady=false,frameBusy=false,stream=null,timer=null,wake=null,downloadURL=null,directURL=null;
 let videoCallback=null,cameraEpoch=0,cameraPending=false,latestFrame=null,capturedFrame=null,opticalRatio=0,statsTimer=null,scanStarted=0,samples=[];
 let watchdog=null,frameDeadline=null,frameStarted=0,frameSerial=0,lastVideoAdvance=0,lastMetadata=null,captureMode='idle',submitted=0,completed=0,cameraSamples=[];
+let lastReplyAt=0,lastProgressAt=0;
 const size=n=>n>=1024**3?(n/1024**3).toFixed(2)+' GiB':(n/1024**2).toFixed(1)+' MiB';
 function status(message,error=false){$('status').textContent=message;$('status').classList.toggle('error',error);}
 function render(state){
@@ -51,16 +52,19 @@ async function receive(file){
   finally{busy(false);capture();}
 }
 function updateOptical(report){
+  const previous=opticalRatio;
   const values=Array.isArray(report)?report.filter(n=>Number.isFinite(n)&&n>=0).map(n=>Math.min(1,n)):[];
   // Failed extraction has no new fountain report; it must not erase progress.
   if(values.length)opticalRatio=Math.max(...values);
+  const advanced=opticalRatio>previous+1e-9;if(advanced)lastProgressAt=performance.now();
   $('optical-progress').value=opticalRatio*100;
   $('optical-percent').textContent='当前数据块（解码器估计）：'+(opticalRatio*100).toFixed(1)+'%';
+  return advanced;
 }
 function diagnostics(){
   const now=performance.now();samples=samples.filter(s=>now-s.time<3000);cameraSamples=cameraSamples.filter(t=>now-t<3000);
   const elapsed=Math.max(.25,Math.min(3,(now-scanStarted)/1000)),count=samples.length;
-  return {fps:count/elapsed,captureFps:cameraSamples.length/elapsed,submitted,completed,mode:captureMode,waitingMs:frameBusy?now-frameStarted:0,decodedRatio:count?samples.filter(s=>s.decoded).length/count:0,decodeMs:count?samples.reduce((s,x)=>s+x.ms,0)/count:0,frames:count,width:canvas.width,height:canvas.height};
+  return {fps:count/elapsed,captureFps:cameraSamples.length/elapsed,submitted,completed,mode:captureMode,waitingMs:frameBusy?now-frameStarted:0,resultAgeMs:now-(lastReplyAt||scanStarted),stalledMs:now-lastProgressAt,decodedRatio:count?samples.filter(s=>s.decoded).length/count:0,decodeMs:count?samples.reduce((s,x)=>s+x.ms,0)/count:0,frames:count,width:canvas.width,height:canvas.height};
 }
 function showDiagnostics(){
   if(!stream)return;
@@ -68,14 +72,16 @@ function showDiagnostics(){
   $('diagnostics').textContent=(d.mode==='compat'?'兼容采集':'自动采集')+' '+d.captureFps.toFixed(1)+' 帧/秒 · 处理 '+d.fps.toFixed(1)+' 帧/秒 · 已提交 '+d.submitted+' / 已返回 '+d.completed+' · 有码帧 '+Math.round(d.decodedRatio*100)+'% · 解码 '+Math.round(d.decodeMs)+' 毫秒/帧 · '+d.width+' × '+d.height;
   if(performance.now()-scanStarted<4000)return;
   if(working){$('scan-hint').textContent='正在校验或写入当前块，暂时停止取帧，请稍候。';return;}
+  if(d.resultAgeMs>3000)$('optical').textContent='最近 '+Math.floor(d.resultAgeMs/1000)+' 秒没有新的解码结果；上次识别成功不代表仍在接收。';
   if(!decoderReady){$('scan-hint').textContent='正在加载解码器，暂不采集画面。';return;}
   if(d.waitingMs>3000){$('scan-hint').textContent='画面已提交，正在等待解码器返回（'+Math.floor(d.waitingMs/1000)+' 秒）。超过 30 秒会停止并提示重扫当前块。';return;}
   if(!d.frames){$('scan-hint').textContent='尚未收到处理结果；请检查相机预览，或切换“兼容采集”后暂停并重新开启相机。';return;}
+  if(d.stalledMs>15000&&d.decodedRatio>=.25){$('scan-hint').textContent='画面可以识别，但最近 '+Math.floor(d.stalledMs/1000)+' 秒未看到新增恢复进度。检查电脑动画是否继续变化、云桌面画面是否冻结；关闭定时切块并保持同一块。识别到重复数据也会显示有码帧。';return;}
   $('scan-hint').textContent=d.frames&&d.decodedRatio<.25?'有效画面较少：把电脑彩色码全屏，保持四角完整、对焦清晰，调整距离；先用 5 FPS 确认稳定识别。':d.decodeMs>150?'手机解码耗时较高。保持页面前台，先用 5 FPS；提高电脑发送帧率未必会更快。':'画面已能识别，可试电脑 10 FPS；若有码帧比例明显下降，退回 5 FPS。保持当前块，收齐后再切换。';
 }
 function loadDecoder(){
   discardDecoder();
-  opticalRatio=0;updateOptical(null);
+  opticalRatio=0;lastReplyAt=0;lastProgressAt=performance.now();updateOptical(null);
   const worker=decoder=new Worker('decoder-worker.js');
   const deadline=setTimeout(()=>{if(worker===decoder&&!decoderReady){status('解码器加载超时，请检查接收页资源是否完整。',true);stopCamera(true);}},20000);
   worker.onerror=error=>{clearTimeout(deadline);if(worker===decoder){status(error.message||'解码器运行失败。',true);stopCamera(true);}};
@@ -85,10 +91,10 @@ function loadDecoder(){
     if(data.ready){clearTimeout(deadline);decoderReady=true;capture();return;}
     if(data.error){clearTimeout(deadline);status(data.error,true);stopCamera(true);return;}
     if(data.frame){
-      clearTimeout(frameDeadline);frameDeadline=null;completed++;
+      clearTimeout(frameDeadline);frameDeadline=null;completed++;lastReplyAt=performance.now();
       samples.push({time:performance.now(),decoded:!!data.decoded,ms:Number.isFinite(data.elapsedMs)?data.elapsedMs:0});
-      updateOptical(data.progress);
-      $('optical').textContent=data.decoded?'已识别彩色码，正在恢复当前数据块。':'请保持完整彩色码在画面内，调整距离与屏幕亮度。';
+      const advanced=updateOptical(data.progress);
+      $('optical').textContent=data.decoded?(advanced?'当前块已收到新增恢复数据。':'本次画面识别到编码数据，但块进度尚未增加，可能是重复数据。'):'本次画面未提取到编码数据，请保持四角完整并检查清晰度。';
       if(data.file){
         // Backpressure: finish durable storage before decoding another stream.
         try{await receive(data.file);}catch{stopCamera(true);return;}
@@ -165,7 +171,7 @@ async function startCamera(){
     stream=candidate;
     const video=$('video');video.hidden=false;video.srcObject=stream;await video.play();
     if(epoch!==cameraEpoch||!stream)return;
-    scanStarted=performance.now();samples=[];cameraSamples=[];latestFrame=capturedFrame=null;
+    scanStarted=lastProgressAt=performance.now();lastReplyAt=0;samples=[];cameraSamples=[];latestFrame=capturedFrame=null;
     $('pause').disabled=false;if(!decoder)loadDecoder();else if(frameBusy)armFrameDeadline();watchVideo(epoch);statsTimer=setInterval(showDiagnostics,1000);status('正在扫描。数据块会自动保存到本机。');
     try{const lock=await navigator.wakeLock?.request('screen');if(epoch===cameraEpoch)wake=lock;else await lock?.release();}catch{}
   }catch(error){if(epoch===cameraEpoch){stopCamera();status(error.message,true);}}
