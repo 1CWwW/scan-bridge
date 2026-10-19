@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>扫码桥 · 更新接收工具</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:#172c45;font:16px/1.7 system-ui,sans-serif}main{max-width:650px;margin:40px auto;padding:24px}section{background:white;border:1px solid #dbe5ef;border-radius:16px;padding:24px}h1{font-size:25px}button{font:inherit;background:#173b65;color:white;border:0;border-radius:9px;padding:12px 18px;margin:8px 8px 8px 0;cursor:pointer}button:disabled{opacity:.45}a{color:#145899}#status{white-space:pre-wrap;overflow-wrap:anywhere}.error{color:#a32536}.muted{color:#607389}</style></head><body><main><section>
+<p class="muted">SCAN BRIDGE · 更新入口 __VERSION__</p><h1>更新扫码接收工具</h1>
+<p>普通模式一直显示旧版本时，在原来的浏览器普通标签页打开这里。此入口不受接收页旧离线缓存控制。</p>
+<p><strong>已写盘的完整数据块会保留。</strong>更新会更换程序缓存；未收齐块在重新打开页面后需要重扫。请先暂停扫描，并关闭其他扫码接收标签页。</p>
+<button id="update">检查并更新程序</button><button id="open" disabled>进入接收页</button>
+<p id="status" role="status" aria-live="polite">联网后点击更新。程序不会清除接收文件、接收日志或网站数据。</p>
+<p class="muted">无痕模式与普通模式的接收存储相互独立。此工具无需申请相机权限；请更新完成后，在接收页开启相机。</p>
+</section></main><script>
+'use strict';
+const $=id=>document.getElementById(id),scope=new URL('receiver/',location.href);let checked=false;
+function status(message,error=false){$('status').textContent=message;$('status').className=error?'error':'';}
+function workerVersion(worker){return new Promise((resolve,reject)=>{
+  const channel=new MessageChannel(),timeout=setTimeout(()=>{channel.port1.close();reject(new Error('新版程序没有响应版本确认，请重试更新。'));},5000);
+  channel.port1.onmessage=event=>{clearTimeout(timeout);channel.port1.close();resolve(event.data);};
+  worker.postMessage({type:'scan-bridge-version'},[channel.port2]);
+});}
+async function activate(registration,expected){
+  const candidate=registration.installing||registration.waiting;
+  const matches=async worker=>{if(!worker||worker.state!=='activated')return false;try{const v=await workerVersion(worker);return v.version===expected.version&&v.build===expected.build;}catch{return false;}};
+  if(await matches(registration.active))return;
+  await new Promise((resolve,reject)=>{
+    let polling=false;
+    const timeout=setTimeout(()=>{clearInterval(timer);reject(new Error('更新超过 90 秒仍未完成，请保持联网后重试；已接收文件保留。'));},90000);
+    const timer=setInterval(async()=>{if(polling)return;polling=true;try{
+      if(candidate?.state==='redundant'){clearTimeout(timeout);clearInterval(timer);reject(new Error('新版资源下载未完成，原有离线版本与已接收数据保留。请检查网络后重试。'));return;}
+      if(await matches(registration.active)){clearTimeout(timeout);clearInterval(timer);resolve();}
+    }finally{polling=false;}},250);
+  });
+}
+$('update').onclick=async()=>{
+  $('update').disabled=true;$('open').disabled=true;checked=false;
+  try{
+    if(!isSecureContext||!navigator.serviceWorker)throw new Error('当前浏览器不能更新离线程序。请在普通模式的 Safari、Chrome 等系统浏览器中打开 HTTPS 更新入口。');
+    status('正在获取最新版本……');
+    const response=await fetch('receiver-version.json?check='+Date.now(),{cache:'no-store'});
+    if(!response.ok)throw new Error('无法获取版本信息（HTTP '+response.status+'）。请检查网络后重试。');
+    const info=await response.json();
+    if(!/^\d+\.\d+\.\d+$/.test(info.version)||! /^[a-f0-9]{16}$/.test(info.build))throw new Error('版本信息格式无效，更新未执行。');
+    status('正在下载并验证接收工具 '+info.version+'，请保持联网……');
+    // A new script URL forces a fresh registration even if the old unversioned
+    // script remains in Safari's HTTP cache. This page is outside its scope.
+    const script=new URL('sw.js',scope);script.searchParams.set('v',info.version);script.searchParams.set('build',info.build);
+    const registration=await navigator.serviceWorker.register(script.href,{scope:scope.href,updateViaCache:'none'});
+    await activate(registration,info);checked=true;$('open').disabled=false;
+    status('已确认接收工具 '+info.version+' 更新完成。请关闭其他扫码接收标签页，再点击“进入接收页”。已写盘进度会自动恢复。');
+  }catch(error){status('更新未完成：'+error.message,true);}
+  finally{$('update').disabled=false;}
+};
+$('open').onclick=async()=>{
+  if(!checked)return;
+  try{
+    const locks=await navigator.locks?.query?.();
+    if(locks?.held.some(lock=>lock.name==='scan-bridge-receiver-v1')){status('另一个接收标签页仍在使用文件。请先关闭其他扫码接收标签页，然后再次点击“进入接收页”。已更新的程序和已写盘数据保留。',true);return;}
+    location.replace(scope.href);
+  }catch(error){status('无法检查接收存储：'+error.message+'。请关闭其他接收标签页后重试。',true);}
+};
+</script></body></html>

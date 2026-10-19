@@ -1,11 +1,13 @@
 /* Scan Bridge receiver UI. MIT License. */
 'use strict';
 const $=id=>document.getElementById(id),requests=new Map();
-const store=new Worker('receiver-store.js');
+let store=null,storeBootError=null;
+try{store=new Worker('receiver-store.js');}catch(error){storeBootError=error;}
 let requestId=0,current=null,initialized=false,working=false,decoder=null,decoderReady=false,frameBusy=false,stream=null,timer=null,wake=null,downloadURL=null,directURL=null;
 let videoCallback=null,cameraEpoch=0,cameraPending=false,latestFrame=null,capturedFrame=null,opticalRatio=0,statsTimer=null,scanStarted=0,samples=[];
 let watchdog=null,frameDeadline=null,frameStarted=0,frameSerial=0,lastVideoAdvance=0,lastMetadata=null,captureMode='idle',submitted=0,completed=0,cameraSamples=[];
 let lastReplyAt=0,lastProgressAt=0;
+let lastStorageActivity=performance.now();
 const size=n=>n>=1024**3?(n/1024**3).toFixed(2)+' GiB':(n/1024**2).toFixed(1)+' MiB';
 function status(message,error=false){$('status').textContent=message;$('status').classList.toggle('error',error);if(error)$('scan-hint').textContent=message;}
 function render(state){
@@ -17,16 +19,23 @@ function render(state){
   $('missing').textContent=h&&!state.ready?'待接收块号：'+state.missing.join('、')+(h.partCount-state.received>state.missing.length?' 等':''):state.ready?'整文件 SHA-256 已通过校验。':'';
   $('save').disabled=!state.ready||working;
 }
-store.onmessage=event=>{
+if(store)store.onmessage=event=>{
+  lastStorageActivity=performance.now();
   const data=event.data;
   if(data.progress){const p=data.progress;status(p.phase+'：'+Math.floor(p.done/p.total*100)+'%');return;}
   const pending=requests.get(data.id);if(!pending)return;requests.delete(data.id);
   if(data.error){if(data.state)render(data.state);pending.reject(Object.assign(new Error(data.error.message),{name:data.error.name}));}
   else pending.resolve(data.result);
 };
-store.onerror=error=>{initialized=false;for(const r of requests.values())r.reject(new Error(error.message||'接收存储后台运行失败。'));requests.clear();busy(false);status('接收存储后台运行失败，请刷新页面。',true);stopCamera(true);};
-function call(type,extra={}){return new Promise((resolve,reject)=>{const id=++requestId;requests.set(id,{resolve,reject});store.postMessage({id,type,...extra});});}
-function busy(value){working=value;for(const id of ['clear','import','persist'])$(id).disabled=value||!initialized;$('save').disabled=value||!current?.ready;}
+if(store)store.onerror=error=>storageUnavailable(new Error(error.message||'接收存储后台运行失败。'));
+function call(type,extra={}){return new Promise((resolve,reject)=>{if(!store){reject(storeBootError||new Error('无法创建接收存储后台。'));return;}const id=++requestId;requests.set(id,{resolve,reject});store.postMessage({id,type,...extra});});}
+function storageUnavailable(error){
+  initialized=false;for(const r of requests.values())r.reject(error);requests.clear();store?.terminate();store=null;
+  busy(false);stopCamera(true);$('retry-storage').hidden=false;
+  $('storage-state').textContent='接收存储未就绪，相机尚未启用。请使用普通浏览模式，关闭其他接收标签页后重新检测。';
+  status('接收存储初始化或运行失败（'+(error.name||'Error')+'）：'+error.message,true);
+}
+function busy(value){working=value;for(const id of ['clear','import','persist'])$(id).disabled=value||!initialized;$('save').disabled=value||!initialized||!current?.ready;}
 async function storageInfo(){
   try{const e=await navigator.storage.estimate();$('storage').textContent='浏览器存储：已用 '+size(e.usage||0)+'，配额约 '+size(e.quota||0)+'。实际写入还受设备剩余空间限制。';}catch{}
 }
@@ -212,9 +221,22 @@ $('persist').onclick=async()=>{try{const granted=await navigator.storage.persist
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&(stream||cameraPending)){stopCamera();status('页面进入后台，已暂停扫描。返回后开启相机，保持电脑发送同一块可继续；页面被系统重载时需重扫未完成块。');}});
 window.addEventListener('pagehide',()=>stopCamera(true));
 (async()=>{
-  try{render(await call('init'));initialized=true;busy(false);$('camera').disabled=false;status(current.ready?'已恢复完整文件，可保存。':current.session?'已恢复接收进度，请补扫缺失块。':'接收存储已就绪。');await storageInfo();}
-  catch(error){status('无法启用大文件接收：'+error.message,true);$('session').textContent='此设备暂不支持自动写盘接收。';}
-  if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
+  let deadline;
+  try{
+    lastStorageActivity=performance.now();
+    const timeout=new Promise((resolve,reject)=>{deadline=setInterval(()=>{if(performance.now()-lastStorageActivity>20000)reject(new Error('接收存储连续 20 秒未响应。请使用普通浏览模式，并关闭其他接收标签页后重试。'));},1000);});
+    render(await Promise.race([call('init'),timeout]));initialized=true;busy(false);$('camera').disabled=false;$('storage-state').textContent='接收存储已就绪，可以开启相机。';
+    status(current.ready?'已恢复完整文件，可保存。':current.session?'已恢复接收进度，请补扫缺失块。':'接收存储已就绪。');await storageInfo();
+  }catch(error){storageUnavailable(error);$('session').textContent='接收存储未就绪，请查看相机按钮下方的错误原因。';}
+  finally{clearInterval(deadline);}
+  if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+    try{
+      const scope=new URL('./',location.href),registration=await navigator.serviceWorker.getRegistration(scope.href);
+      const active=registration?.active&&new URL(registration.active.scriptURL);
+      if(registration?.scope===scope.href&&active?.searchParams.get('v')==='__VERSION__')await registration.update();
+      else await navigator.serviceWorker.register('sw.js?v=__VERSION__',{scope:scope.href,updateViaCache:'none'});
+    }catch{}
+  }
 })();
 // Used by integration tests and alternative optical adapters; no data is uploaded.
 window.ScanReceiver={receive,call,getState:()=>current,getDiagnostics:diagnostics,stopCamera};

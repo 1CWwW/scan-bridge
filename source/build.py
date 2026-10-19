@@ -70,7 +70,7 @@ receiver = output / 'receiver'
 receiver.mkdir(exist_ok=True)
 for source, target in [('receiver.html', 'index.html'), ('receiver.js', 'receiver.js'),
                        ('receiver-store.js', 'receiver-store.js'), ('receiver-decoder.js', 'decoder-worker.js'),
-                       ('receiver-sw.js', 'sw.js'), ('large-files.js', 'protocol.js')]:
+                       ('large-files.js', 'protocol.js')]:
     content = (ROOT / source).read_text(encoding='utf-8').replace('__VERSION__', version)
     if target.endswith('.html'):
         content = content.replace('<head>', '<head>\n' + notice, 1)
@@ -79,4 +79,14 @@ for source, target in [('sha256.js','sha256.js'),('receiver/cimbar_js.js','cimba
                        ('receiver/cimbar_js.2026-08-21T2336.wasm','cimbar_js.2026-08-21T2336.wasm')]:
     shutil.copyfile(vendor / source, receiver / target)
 (receiver / 'LICENSES.txt').write_text(notice, encoding='utf-8', newline='\n')
+shell = hashlib.sha256()
+for filename in sorted(['index.html', 'receiver.js', 'receiver-store.js', 'decoder-worker.js',
+                        'protocol.js', 'sha256.js', 'cimbar_js.js', 'cimbar_js.2026-08-21T2336.wasm']):
+    shell.update(filename.encode() + b'\0' + (receiver / filename).read_bytes())
+build = shell.hexdigest()[:16]
+sw = (ROOT / 'receiver-sw.js').read_text(encoding='utf-8').replace('__VERSION__', version).replace('__BUILD__', build)
+(receiver / 'sw.js').write_text(sw, encoding='utf-8', newline='\n')
+updater = (ROOT / 'update-receiver.html').read_text(encoding='utf-8').replace('__VERSION__', version)
+(output / 'update-receiver.html').write_text(updater.replace('<head>', '<head>\n' + notice, 1), encoding='utf-8', newline='\n')
+(output / 'receiver-version.json').write_text(json.dumps({'version': version, 'build': build}, sort_keys=True) + '\n', encoding='utf-8', newline='\n')
 print('dist/receiver/ (HTTPS or localhost required for camera and persistent storage)')
