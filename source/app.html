@@ -6,7 +6,7 @@
 </style>
 <style>[hidden]{display:none!important}#stats{overflow-wrap:anywhere}#screen{height:clamp(380px,calc(100vh - 320px),660px);min-height:380px}#screen:fullscreen{height:100vh}#plainbox{height:100%;width:100%;display:grid;place-items:center;padding:16px}#plainqr{display:block;max-width:100%;max-height:100%}.plain-mode #text{min-height:350px}.plain-mode details summary{font-weight:650}#plain-snippet{overflow-wrap:anywhere;margin-top:12px}@media(max-width:1040px){#screen{height:650px}}@media(max-width:600px){#screen{height:92vw}}</style></head>
 <body>
-<header><div><h1>扫码桥</h1><p class="muted">粘贴文本直接扫码复制，或拖入文档、图片与文件夹</p></div><span class="tag">v1.5 · Windows / macOS / Linux</span></header>
+<header><div><h1>扫码桥</h1><p class="muted">粘贴文本直接扫码复制，或拖入文档、图片与文件夹</p></div><span class="tag">v1.5.1 · Windows / macOS / Linux</span></header>
 <main><section class="card"><h2>01　选择文本或文件</h2>
 <div class="row"><label>传递方式 <select id="mode"><option value="plain" selected>直接文本二维码 · 扫码复制</option><option value="files">文件传输 · 彩色动画</option></select></label></div>
 <div id="file-controls" hidden>
@@ -32,7 +32,7 @@
 <div id="plain-help" class="help"><strong>扫码后直接复制文本</strong><p>二维码内容就是原文，不生成 ZIP，也不添加链接、序号或包装文本。请使用支持普通文本读取和复制的扫码工具。</p><p>长文本会分成多张，需要按顺序复制、拼接，不额外插入空格或换行。若系统相机未显示文本内容，可换用支持文本的扫码工具。</p><p id="plain-snippet" class="small muted"></p></div>
 <div id="file-help" class="help" hidden><div class="row"><label>手机系统 <select id="phone"><option value="auto">通用 / 不确定</option><option value="ios">iPhone / iPad</option><option value="android">Android（小米、OPPO、vivo、三星等）</option><option value="other">HarmonyOS / 其他系统</option></select></label></div><p id="receiver-guide"></p><p><a id="android-receiver" href="https://github.com/sz3/cfc/releases" target="_blank" rel="noopener" hidden>Android 接收应用（上游 CFC）</a></p><div class="receiver"><canvas id="receiverqr"></canvas><div>用手机扫描左侧二维码，<br>在手机浏览器打开 <a id="receiver-link" href="https://1CWwW.github.io/scan-bridge/receiver/" target="_blank" rel="noopener">配套接收页</a>，允许使用后置相机。<div class="small muted">小二维码打开接收工具；文件由上方彩色动画传递。</div></div></div>
 <details><summary>自托管接收地址</summary><label>HTTPS 接收网址 <input id="receiver-url" type="url" value="https://1CWwW.github.io/scan-bridge/receiver/" style="width:100%"></label><button id="receiver-update">更新接收二维码</button></details><ol><li>电脑点击“开始传输”，手机摄像头对准完整彩色码。</li><li>新接收页已固定为 <strong>B</strong> 模式。保持整个码在画面内，等待文件完成。</li><li id="receiver-save">接收完成后保存文件；收到 ZIP 时，用文件管理工具解压。</li></ol>
-<p class="small muted">接收页首次加载需要手机联网；电脑发送端无需联网。开始后画面会快速闪动。识别慢时降低帧率、使用全屏并调整拍摄距离。</p></div>
+<p class="small muted">接收页首次加载需要手机联网；电脑发送端无需联网。开始后画面会快速闪动。优先全屏并调整距离、对焦；5 FPS 识别稳定后可试 10 FPS。提高帧率不保证更快。</p></div>
 </section></main>
 <footer>发送引擎：CIMBAR v0.6.8（MPL-2.0），压缩：fflate v0.8.2（MIT）。适用于有现代浏览器的电脑；不同手机的实际扫码效果需先用小文件验证。<a href="https://github.com/sz3/libcimbar" target="_blank" rel="noopener">上游项目</a> · <a href="https://github.com/sz3/libcimbar/tree/v0.6.8" target="_blank" rel="noopener">发送引擎对应源码</a></footer>
 <!--BUNDLED_LIBRARIES-->

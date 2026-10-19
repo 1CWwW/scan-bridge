@@ -31,6 +31,7 @@ const MiB=1024*1024;
     await page.evaluate(expected=>{info.sha256=expected;},expected);
     const send=async index=>page.evaluate(async i=>{const part=await ScanLarge.makePart(sourceFile,info,i);return ScanReceiver.receive(part).then(()=>ScanReceiver.getState());},index);
     const first=await send(lastIndex);assert.equal(first.received,1);assert.equal(first.session.partCount,partCount);
+    assert(Math.abs(Number(await page.locator('#progress').getAttribute('value'))-first.receivedBytes/first.session.totalBytes*100)<.00001,'Whole-file progress is not based on committed bytes');
     assert.equal((await send(lastIndex)).received,1,'Duplicate block changed progress');
     const failures=await page.evaluate(async()=>{
       const p=await ScanLarge.makePart(sourceFile,info,0),h=await ScanLarge.readHeader(p),answers=[];

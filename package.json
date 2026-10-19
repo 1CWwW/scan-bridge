@@ -1,10 +1,10 @@
 {
   "name": "scan-bridge",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "private": true,
   "description": "Offline text QR and CIMBAR file transfer for documents, images and folders",
   "scripts": {
-    "test": "node tests/verify_plain_qr.cjs && node tests/verify_linux_bridge.cjs && node tests/verify_native_drop.cjs && node tests/verify_documents.cjs && node tests/verify_large_files.cjs && node tests/verify_receiver.cjs && node tests/verify_optical_receiver.cjs && node tests/verify_receive_failures.cjs"
+    "test": "node tests/verify_plain_qr.cjs && node tests/verify_linux_bridge.cjs && node tests/verify_native_drop.cjs && node tests/verify_documents.cjs && node tests/verify_large_files.cjs && node tests/verify_receiver.cjs && node tests/verify_optical_receiver.cjs && node tests/verify_receive_failures.cjs && node tests/verify_receiver_feedback.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

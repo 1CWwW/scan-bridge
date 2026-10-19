@@ -36,18 +36,19 @@ function extractFile(id){
 }
 self.onmessage=event=>{
   try{
+    const started=performance.now();
     const {pixels,width,height}=event.data;
     if(!(pixels instanceof Uint8ClampedArray)||width<1||height<1||width*height*4!==pixels.length||pixels.length>1920*1920*4)throw new Error('相机帧尺寸无效。');
     const img=alloc('image',pixels.length),size=Module._cimbard_get_bufsize(),out=alloc('fountain',size);
     Module.HEAPU8.set(pixels,img);
     const count=Module._cimbard_scan_extract_decode(img,width,height,4,out,size);
-    let file=null,progress=[];
+    let file=null,progress=null;
     if(count>0){
       const result=Module._cimbard_fountain_decode(out,count);
       if(result>0n)file=extractFile(Number(result&0xffffffffn));
       const report=alloc('report',4096),length=Module._cimbard_get_report(report,4096);
       try{progress=JSON.parse(new TextDecoder().decode(Module.HEAPU8.subarray(report,report+length)));}catch{}
     }
-    postMessage({frame:true,decoded:count>0,progress,file});
+    postMessage({frame:true,decoded:count>0,progress,file,elapsedMs:performance.now()-started});
   }catch(error){postMessage({error:error.message});}
 };
