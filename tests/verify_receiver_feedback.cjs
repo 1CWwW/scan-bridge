@@ -89,6 +89,7 @@ const assert=require('node:assert/strict');
     await page.locator('#pause').click();await page.waitForTimeout(70);assert.equal(await page.evaluate(()=>testDecoders[1].messages.length),2);
     await page.clock.install();await page.locator('#camera').click();await page.waitForFunction(()=>!document.getElementById('pause').disabled);await page.clock.fastForward(31000);
     assert((await page.locator('#status').textContent()).includes('超过 30 秒没有返回'));
+    assert((await page.locator('#scan-hint').textContent()).includes('超过 30 秒没有返回'));
     assert.equal(await page.evaluate(()=>testDecoders[1].stopped),true);
     assert(await page.locator('#video').isHidden());
     await page.locator('#camera').click();await page.waitForFunction(()=>testDecoders.length===3&&testDecoders[2].messages.length===1);

@@ -7,7 +7,7 @@ let videoCallback=null,cameraEpoch=0,cameraPending=false,latestFrame=null,captur
 let watchdog=null,frameDeadline=null,frameStarted=0,frameSerial=0,lastVideoAdvance=0,lastMetadata=null,captureMode='idle',submitted=0,completed=0,cameraSamples=[];
 let lastReplyAt=0,lastProgressAt=0;
 const size=n=>n>=1024**3?(n/1024**3).toFixed(2)+' GiB':(n/1024**2).toFixed(1)+' MiB';
-function status(message,error=false){$('status').textContent=message;$('status').classList.toggle('error',error);}
+function status(message,error=false){$('status').textContent=message;$('status').classList.toggle('error',error);if(error)$('scan-hint').textContent=message;}
 function render(state){
   current=state;
   const h=state.session;
