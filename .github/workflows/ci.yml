@@ -40,6 +40,7 @@ jobs:
       - run: python tests/verify_plain_decode.py
       - run: python tests/verify_code_zip.py
       - run: python tests/verify_documents.py
+      - run: python tests/verify_large_files.py
       - name: Attach results on failure
         if: failure()
         uses: actions/upload-artifact@v4

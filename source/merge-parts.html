@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>扫码桥 · 分卷还原</title>
+<style>body{font:16px/1.7 system-ui,sans-serif;background:#f4f6fa;color:#243149;margin:0}main{max-width:820px;margin:35px auto;background:white;border:1px solid #dde4ee;border-radius:16px;padding:28px}button,input{font:inherit}button{padding:10px 20px;border-radius:8px;border:1px solid #ccd6e6;background:white;cursor:pointer}button:disabled{opacity:.5}#merge{background:#2e5ccd;color:white}.muted{color:#66748c}#status{white-space:pre-wrap;overflow-wrap:anywhere}progress{width:100%}.row{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}@media(max-width:600px){main{margin:12px;padding:18px}}</style></head><body><main>
+<h1>扫码桥 · 分卷还原</h1><p>选择同一个文件的全部 <strong>.sbpart</strong> 分卷，顺序不限。工具会检查缺卷、重复卷、损坏卷及整文件校验值，文件始终在本机处理。</p>
+<p id="capability" class="muted"></p><input id="parts" type="file" multiple accept=".sbpart"><div class="row"><button id="merge" disabled>校验并还原文件</button><button id="cancel" disabled>取消</button></div><progress id="progress" max="100" value="0"></progress><p id="status" role="status">请选择分卷。</p>
+<p class="muted">超过 2 GB 的文件推荐电脑 Chrome/Edge，或使用发行包中的 Python 合并工具。部分手机和浏览器无法流式写入磁盘，仅支持小文件合并。还原为 TAR/ZIP 后，再用解压工具打开。</p>
+<p><a href="https://github.com/1CWwW/scan-bridge" target="_blank" rel="noopener">开源项目与使用说明</a></p></main>
+<!--MERGE_LIBRARIES-->
+<script>
+'use strict';
+const $=id=>document.getElementById(id),MEMORY_LIMIT=128*1024*1024;
+let parts=[],generation=0,busy=false;
+const streaming=typeof window.showSaveFilePicker==='function';
+$('capability').textContent=streaming?'此浏览器支持流式写盘：逐卷读取和校验，可还原超过 2 GB 的文件，容量取决于磁盘。':'此浏览器不支持流式写盘：内存合并限 128 MiB。更大的文件请在电脑 Chrome/Edge 或使用 Python 合并。';
+$('parts').onchange=async()=>{
+  const token=++generation;parts=[];$('merge').disabled=true;
+  try{const selected=await ScanLarge.inspectParts(Array.from($('parts').files));if(token!==generation)return;
+    parts=selected;const first=parts[0].header;
+    if(!streaming&&first.totalBytes>MEMORY_LIMIT)throw new Error('文件超过内存合并范围。请将这些卷交给电脑 Chrome/Edge 或 Python 合并工具，不要在此浏览器强行合并。');
+    $('status').textContent='已找到 '+parts.length+' 卷，将还原：'+first.name+'\n总计 '+first.totalBytes+' 字节。';$('merge').disabled=false;
+  }catch(error){$('status').textContent=error.message;}
+};
+$('cancel').onclick=()=>{generation++;$('status').textContent='正在取消，还原临时文件不会提交。';};
+$('merge').onclick=async()=>{
+  if(busy||!parts.length)return;
+  busy=true;const token=++generation,first=parts[0].header;
+  $('merge').disabled=true;$('parts').disabled=true;$('cancel').disabled=false;
+  let writer=null;
+  try{
+    const chunks=[];
+    if(streaming){const handle=await window.showSaveFilePicker({suggestedName:first.name});writer=await handle.createWritable();}
+    else writer={write:async data=>{chunks.push(data);},abort:async()=>{chunks.length=0;},close:async()=>{}};
+    const hash=await ScanLarge.mergeParts(parts,writer,(done,total)=>{$('progress').value=Math.round(done/total*100);$('status').textContent='已校验并写入 '+done+' / '+total+' 字节。';},()=>generation===token);
+    await writer.close();writer=null;
+    if(!streaming){const url=URL.createObjectURL(new Blob(chunks,{type:first.mime||'application/octet-stream'})),a=document.createElement('a');a.href=url;a.download=first.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+    $('status').textContent='还原成功：'+first.name+'\n整文件 SHA-256：'+hash;
+  }catch(error){if(writer)await writer.abort().catch(()=>{});$('status').textContent=error.name==='AbortError'?'已取消。':error.message;}
+  finally{busy=false;$('merge').disabled=false;$('parts').disabled=false;$('cancel').disabled=true;}
+};
+window.ScanMerge={inspectParts:ScanLarge.inspectParts,mergeParts:ScanLarge.mergeParts};
+</script></body></html>

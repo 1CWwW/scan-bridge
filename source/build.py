@@ -50,6 +50,8 @@ Complete notices follow.
 engine = engine.replace('<head>', '<head>\n' + notice, 1)
 template = (ROOT / 'app.html').read_text(encoding='utf-8')
 libraries = '\n'.join('<script>\n' + (vendor / file).read_text(encoding='utf-8').replace('</script', '<\\/script') + '\n</script>' for file in ['fflate.js', 'sha256.js', 'qrcodegen.js'])
+large = '<script>\n' + (ROOT / 'large-files.js').read_text(encoding='utf-8') + '\n</script>'
+libraries += '\n' + large
 html = template.replace('<!--BUNDLED_LIBRARIES-->', libraries).replace('__ENGINE_BASE64__', base64.b64encode(engine.encode()).decode())
 html = html.replace('<head>', '<head>\n' + notice, 1)
 output = ROOT.parent / 'dist'
@@ -58,3 +60,8 @@ for filename, content in [('scan-bridge.html', html), ('code-bridge.html', html)
     target = output / filename
     target.write_text(content, encoding='utf-8', newline='\n')
     print(target.relative_to(ROOT.parent))
+merge = (ROOT / 'merge-parts.html').read_text(encoding='utf-8')
+hash_library = '<script>\n' + (vendor / 'sha256.js').read_text(encoding='utf-8') + '\n</script>'
+merge = merge.replace('<!--MERGE_LIBRARIES-->', hash_library + '\n' + large).replace('<head>', '<head>\n' + notice, 1)
+(output / 'merge-parts.html').write_text(merge, encoding='utf-8', newline='\n')
+(output / 'merge-parts.py').write_text((ROOT / 'merge-parts.py').read_text(encoding='utf-8'), encoding='utf-8', newline='\n')

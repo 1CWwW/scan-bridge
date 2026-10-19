@@ -20,12 +20,12 @@ An offline, single-file browser tool for transferring text and arbitrary files f
 | --- | --- | --- |
 | 普通文字、会议记录、网址、代码 | 粘贴文本，生成黑白二维码 | 扫码读取并复制原文 |
 | 单个 Word / Excel / PPT / PDF / 图片等文件 | 拖入文件，点击“准备发送” | 原文件，保留原格式和原字节 |
-| 多个文件、文件夹 | 拖入后准备发送 | ZIP，解压恢复目录与原文件 |
+| 多个文件、文件夹 | 拖入后准备发送 | ZIP / 大批量 TAR，解压恢复目录与原文件 |
 | 长文本、文件加说明 | 文件模式中粘贴文字说明 | ZIP 内的 `pasted-text.txt` 和所选文件 |
 
 不限制扩展名：DOC / DOCX、XLS / XLSX、PPT / PPTX、WPS 文件、PDF、TXT、图片、音视频及其他二进制文件都按原字节处理。不依赖 Office，不转换文档格式。手机查看、编辑或播放文件，需要对应软件。
 
-默认**单文件直传，多文件自动打包**。文件夹、附带说明或摘要、空文件，以及“统一打包为 ZIP”使用 ZIP。单个现有 ZIP 会按原文件发送。摘要和开发目录过滤默认关闭，普通文件夹中的 `build`、`target` 等目录不会自动排除。
+默认**单文件保持原格式，多文件自动打包**。小批量生成 ZIP，原始内容超过 64 MiB 自动改为流式 TAR；也可手动选 TAR。现有 ZIP 按普通原文件处理。摘要和开发目录过滤默认关闭，普通文件夹中的 `build`、`target` 不会自动排除。
 
 ## 电脑与手机
 
@@ -44,7 +44,11 @@ An offline, single-file browser tool for transferring text and arbitrary files f
 
 **传文件**：切换文件模式 → 拖入或选择文件 → “准备发送” → 手机扫描小二维码打开接收页并允许相机 → 电脑“开始传输” → 手机对准完整彩色动画 → 接收完成后保存原文件或解压 ZIP。
 
-每批最多 **5000 个文件**、原始内容合计 **20 MiB**、生成 ZIP 最多 **25 MiB**。大文件分批处理，已经压缩的办公文档、图片、音视频不一定明显缩小。默认 10 FPS，识别慢时试 5 FPS、全屏并调整距离。完成状态以手机为准，电脑没有接收反馈通道。
+**已取消 20 MiB / 25 MiB 文件总量限制，支持超过 2 GiB 的文件。** 待传内容超过 16 MiB 后自动切为 8 MiB 分卷；每卷独立接收并保存为 `.sbpart`，最后校验合并。逐段读取，容量取决于浏览器、磁盘及接收设备，每批仍最多 5000 个原文件。
+
+[大文件与还原说明](docs/large-files.md)：支持卷号跳转、重扫和重新选择同一文件后继续原卷号。大于 2 GiB 的最终合并推荐电脑 Chrome/Edge 流式写盘或 Python 工具；不支持写盘的浏览器只提供 128 MiB 以内存合并。手机可分卷保存，但不保证能在手机浏览器合并几 GB 的文件。
+
+扫码吞吐量仍受光学链路限制：**即使实际达到 100 KiB/s，2 GiB 的纯数据也要约 5.8 小时**，还未计冗余和操作时间。取消容量限制并不提高传输速度。完成状态以手机为准，电脑没有接收反馈通道。
 
 详细操作见 [使用说明](docs/usage.zh-CN.md)，平台验证范围见 [兼容性说明](docs/compatibility.md)。
 
@@ -56,7 +60,7 @@ Python 3.10+ 使用标准库离线构建，并校验本地依赖 SHA-256：
 python3 source/build.py
 ```
 
-输出 `dist/scan-bridge.html`、兼容早期入口的 `dist/code-bridge.html` 和可检查的 `dist/cimbar-engine.html`。构建结果可重复生成。
+输出 `dist/scan-bridge.html`、兼容早期入口的 `dist/code-bridge.html` 和可检查的 `dist/cimbar-engine.html`。还会生成离线分卷还原页面 `dist/merge-parts.html` 和标准库合并脚本 `dist/merge-parts.py`。构建结果可重复生成。
 
 测试需要 Node.js 22+ 和 Python 3.10+，首次安装测试依赖需联网：
 
@@ -70,11 +74,12 @@ npm test
 python3 tests/verify_plain_decode.py
 python3 tests/verify_code_zip.py
 python3 tests/verify_documents.py
+python3 tests/verify_large_files.py
 ```
 
 Linux CI 使用 `npx playwright install --with-deps chromium`。可设置 `CHROME_PATH` 指向现有 Chrome / Chromium。测试产物写入忽略目录 `test-results/`，办公文档和其他样例全部是合成内容。
 
-工作流在 Windows、Ubuntu、macOS 上检查构建和 Chromium 集成测试。覆盖真实磁盘拖入、独立 QR 解码、Office 与二进制文件原字节校验、单文件直传、多文件 ZIP、目录和空文件、可选摘要、编辑失效、动画启停及发送端离线运行。**真实手机摄像头链路仍需各设备实测**，自动测试不等同于认证所有品牌手机。
+工作流在 Windows、Ubuntu、macOS 上检查构建和 Chromium 集成测试。覆盖真实磁盘拖入、独立 QR 解码、Office 与二进制文件原字节校验、单文件直传、多文件 ZIP、目录和空文件、可选摘要、编辑失效、动画启停及发送端离线运行。大文件测试实际完整读取一个超过 2 GiB 的文件并验证首末卷，单次读取最多 8 MiB；35 MiB 样例完成浏览器及独立 Python 合并，并独立检查 TAR 路径与校验值。**真实手机摄像头链路仍需各设备实测**，自动测试不等同于认证所有品牌手机。
 
 ## 许可证与上游
 
