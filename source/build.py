@@ -89,4 +89,16 @@ sw = (ROOT / 'receiver-sw.js').read_text(encoding='utf-8').replace('__VERSION__'
 updater = (ROOT / 'update-receiver.html').read_text(encoding='utf-8').replace('__VERSION__', version)
 (output / 'update-receiver.html').write_text(updater.replace('<head>', '<head>\n' + notice, 1), encoding='utf-8', newline='\n')
 (output / 'receiver-version.json').write_text(json.dumps({'version': version, 'build': build}, sort_keys=True) + '\n', encoding='utf-8', newline='\n')
+# Keep the requested historical scanner independent of the default receiver.
+# Only its page notice and cache namespace differ from the tagged release.
+pinned = json.loads((ROOT / 'pinned/1.5.2/manifest.json').read_text(encoding='utf-8'))
+legacy = output / 'receiver-v1.5.2'
+legacy.mkdir(exist_ok=True)
+for filename, info in pinned['files'].items():
+    source = ROOT / info['source']
+    data = source.read_bytes() if filename.endswith('.wasm') else source.read_text(encoding='utf-8').encode('utf-8')
+    if hashlib.sha256(data).hexdigest() != info['sha256']:
+        raise SystemExit(f'Pinned 1.5.2 asset changed: {filename}. Review the historical version before updating.')
+    (legacy / filename).write_bytes(data)
 print('dist/receiver/ (HTTPS or localhost required for camera and persistent storage)')
+print('dist/receiver-v1.5.2/ (fixed v1.5.2 scanner; separate program cache, shared receive storage)')

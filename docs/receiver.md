@@ -4,6 +4,14 @@
 
 发送端依旧是离线单文件 HTML。接收端是 `dist/receiver/` 目录，包含网页、两个 Worker、协议和哈希库、WASM 解码器、离线缓存及许可证。相机和浏览器文件系统要求安全上下文，不能承诺手机直接打开 `file://` HTML 即可运行。
 
+## 使用固定 1.5.2 接收页
+
+[打开固定 1.5.2 接收页](https://1cwww.github.io/scan-bridge/receiver-v1.5.2/)。手机使用原来的浏览器普通模式，先关闭其他扫码接收标签页。电脑发送端无需降级；在“自托管接收地址”填入 `https://1cwww.github.io/scan-bridge/receiver-v1.5.2/` 并更新二维码，也能用手机扫码打开此版本。
+
+该目录固定保存 v1.5.2 的 `receiver.js`、`decoder-worker.js` 和 `receiver-store.js`，校验值记录于 `source/pinned/1.5.2/manifest.json`，构建时逐文件检查。只有页面的固定版本提示和 Service Worker 缓存命名隔离有调整。其程序缓存使用 `scan-bridge-pinned-1.5.2-`，不会与默认接收页互相清除；接收数据仍使用同一来源下的 `scan-bridge-recv-v1/`，已写盘块可跨版本恢复，未完成块需重扫。两个接收页仍受同一单写入锁保护。
+
+固定页不会跟随默认接收页升级。自托管时将 `dist/receiver-v1.5.2/` 整个目录部署到 HTTPS；它无需依赖默认接收页，保留所附许可证。普通模式和无痕模式的数据相互隔离，固定旧版不解决浏览器本身的权限或存储限制。
+
 ## 普通模式刷不掉旧版本
 
 在原来的浏览器普通标签页打开 [更新入口](https://1cwww.github.io/scan-bridge/update-receiver.html)，先暂停扫描并关闭其他接收标签页，再点击“检查并更新程序”。确认新版本激活后点击“进入接收页”。原来的已写盘完整块会复查恢复，未完成块需重扫。无需清除 Safari 网站数据。

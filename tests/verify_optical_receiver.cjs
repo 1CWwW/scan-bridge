@@ -7,7 +7,7 @@ const assert=require('node:assert/strict');
   try{
     const page=await browser.newPage({viewport:{width:1440,height:1100}}),errors=[];
     page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(90000);
-    await page.goto(server.url+'/receiver/');await page.waitForFunction(()=>!document.getElementById('camera').disabled);
+    await page.goto(server.url+(process.env.SCANBRIDGE_RECEIVER_PATH||'/receiver/'));await page.waitForFunction(()=>!document.getElementById('camera').disabled);
     await page.evaluate(url=>{const f=document.createElement('iframe');f.id='sender-test';f.src=url+'/scan-bridge.html';f.width=1400;f.height=1000;document.body.appendChild(f);},server.url);
     const sender=page.frameLocator('#sender-test');await sender.locator('#mode').selectOption('files');
     await page.waitForFunction(()=>document.getElementById('sender-test').contentWindow.eval('engineReady'));

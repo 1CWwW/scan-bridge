@@ -1,0 +1,56 @@
+{
+  "version": "1.5.2",
+  "commit": "59d30bf84f5e524c163eb12cfe572b17c6ce35e0",
+  "files": {
+    "LICENSES.txt": {
+      "source": "pinned/1.5.2/LICENSES.txt",
+      "sha256": "9269dab5892faa2bb8987d4e4095d2bd62252f72919cc85f41a95d4a8d3fe295",
+      "originalSha256": "9269dab5892faa2bb8987d4e4095d2bd62252f72919cc85f41a95d4a8d3fe295"
+    },
+    "cimbar_js.2026-08-21T2336.wasm": {
+      "source": "vendor/receiver/cimbar_js.2026-08-21T2336.wasm",
+      "sha256": "019a0d79419bdee0b918f409cdcfff919c172b75131dac5a36a44385151ca5af",
+      "originalSha256": "019a0d79419bdee0b918f409cdcfff919c172b75131dac5a36a44385151ca5af"
+    },
+    "cimbar_js.js": {
+      "source": "vendor/receiver/cimbar_js.js",
+      "sha256": "c18d4c47ffd9ad4bf6c5e6c9fb1e8a8aabf52eadf5dfa70844b904b1c67d5418",
+      "originalSha256": "c18d4c47ffd9ad4bf6c5e6c9fb1e8a8aabf52eadf5dfa70844b904b1c67d5418"
+    },
+    "decoder-worker.js": {
+      "source": "pinned/1.5.2/decoder-worker.js",
+      "sha256": "cea0f36167a6a96185a087621d957fa0d9cf9b96bb3dbd3bf2d059b82979cbce",
+      "originalSha256": "cea0f36167a6a96185a087621d957fa0d9cf9b96bb3dbd3bf2d059b82979cbce"
+    },
+    "index.html": {
+      "source": "pinned/1.5.2/index.html",
+      "sha256": "7a3f1f193db4eeb64ff44199f229f200618a3f07ab2e8ced33a006a36ae5247b",
+      "originalSha256": "9c3514e0cb3fd68e831c87430a07fb954be821f2a19be0edf268a326131d8059"
+    },
+    "protocol.js": {
+      "source": "pinned/1.5.2/protocol.js",
+      "sha256": "6eaa6758277b6992e4d67b3b737dad2f1af6b3230c69aa5f645aa4c8cb873a3f",
+      "originalSha256": "6eaa6758277b6992e4d67b3b737dad2f1af6b3230c69aa5f645aa4c8cb873a3f"
+    },
+    "receiver-store.js": {
+      "source": "pinned/1.5.2/receiver-store.js",
+      "sha256": "c0da809de1450e2fd231a54380cca06e11e8cc8d53f6ff9b517cd5ab80db73f7",
+      "originalSha256": "c0da809de1450e2fd231a54380cca06e11e8cc8d53f6ff9b517cd5ab80db73f7"
+    },
+    "receiver.js": {
+      "source": "pinned/1.5.2/receiver.js",
+      "sha256": "a53e53c6020c97c1c3cc2a3c8009d8c28d2abfa2c089622b18a534133e1b9dce",
+      "originalSha256": "a53e53c6020c97c1c3cc2a3c8009d8c28d2abfa2c089622b18a534133e1b9dce"
+    },
+    "sha256.js": {
+      "source": "vendor/sha256.js",
+      "sha256": "4b53da9acab6a5d4010107be2025002fe1a22da64804dd5200b46895cb899219",
+      "originalSha256": "4b53da9acab6a5d4010107be2025002fe1a22da64804dd5200b46895cb899219"
+    },
+    "sw.js": {
+      "source": "pinned/1.5.2/sw.js",
+      "sha256": "a7cb36996999354ba76be167125cd85104eae2b4d924a264c1c3cdf0e8e8d2a5",
+      "originalSha256": "11583aaf254babed60f411b3cd7ae1b659c3f42c2491756c06232e12731d31ac"
+    }
+  }
+}
